@@ -1,7 +1,7 @@
 // Service worker: deja la app disponible sin conexión (la calculadora funciona offline;
 // el mercado y los datos requieren internet).
-const CACHE = 'semaforo-p2p-v9';
-const ARCHIVOS = ['./', './index.html', './manifest.json'];
+const CACHE = 'semaforo-p2p-v10';
+const ARCHIVOS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
