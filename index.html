@@ -71,7 +71,7 @@ table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:9px 6px;
 .pos{color:var(--green)} .neg{color:var(--red)} .muted{color:var(--muted)} .peq{font-size:12px} .centro{text-align:center}
 /* ---- nav flotante ---- */
 nav{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),600px);background:rgba(18,22,31,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line2);border-radius:24px;display:flex;padding:6px;z-index:10;box-shadow:0 20px 50px -20px rgba(0,0,0,.9)}
-nav button{flex:1;background:none;color:var(--muted);border-radius:18px;padding:9px 0 7px;font:700 10.5px var(--f-body);display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:none;position:relative;transition:.2s}
+nav button{flex:1;background:none;color:var(--muted);border-radius:18px;padding:9px 0 7px;font:700 9.5px var(--f-body);min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:none;position:relative;transition:.2s}
 nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round} nav button.activa{color:var(--green);background:rgba(34,224,107,.12)}
 canvas{width:100%;height:170px;display:block}
 .segment{display:flex;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:4px} .segment button{flex:1;background:none;color:var(--muted);padding:9px;font:700 13px var(--f-body);border-radius:11px;box-shadow:none} .segment button.activa{background:var(--card-solid);color:var(--text);box-shadow:0 4px 12px -4px rgba(0,0,0,.6)}
@@ -240,6 +240,69 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     <h2>Historial del spread</h2>
     <canvas id="c_spread"></canvas>
     <p class="muted peq" style="margin:6px 0 0">Cada actualización guarda una foto del mercado. Con varios días de datos verás a qué horas el spread es mayor.</p>
+  </div>
+</section>
+
+
+<!-- ============ ESTRATEGIA ============ -->
+<section id="estrategia">
+  <div class="card">
+    <h2>Motor de rentabilidad</h2>
+    <p class="peq muted" style="margin:0 0 10px">Analiza el libro completo de USDT/VES, cada método de pago, el libro USDT/USD y la tasa BCV. Tarda unos segundos.</p>
+    <div class="fila">
+      <button style="flex:1" onclick="analizarEstrategia()">Analizar ahora</button>
+      <label class="fila peq muted" style="gap:6px;flex:1"><input type="checkbox" id="e_auto" onchange="autoEstrategia()" style="width:18px;height:18px;margin:0"> Vigilar cada 3 min y avisar</label>
+    </div>
+    <p class="muted peq" id="e_hora" style="margin:8px 0 0"></p>
+  </div>
+
+  <div class="card" id="e_card_op" style="display:none">
+    <h2>Oportunidades ahora <span class="muted" id="e_op_n" style="text-transform:none;letter-spacing:0"></span></h2>
+    <p class="peq muted" style="margin:0 0 6px">Libro cruzado: alguien vende más barato de lo que otro compra. Tomas ambos anuncios como taker (0,05 USDT por orden) y te quedas la diferencia.</p>
+    <div style="overflow-x:auto"><table id="t_op"></table></div>
+    <h2 style="margin-top:14px">Anuncios fuera de mercado</h2>
+    <p class="peq muted" style="margin:0 0 6px">Vendedores 0,6 % o más por debajo de la mediana (cómpralos para tu inventario) y compradores 0,6 % o más por encima (véndeles).</p>
+    <div style="overflow-x:auto"><table id="t_fuera"></table></div>
+  </div>
+
+  <div class="card" id="e_card_met" style="display:none">
+    <h2>Spread por método de pago</h2>
+    <p class="peq muted" style="margin:0 0 6px">Cada banco es un libro distinto. Publica anuncios separados por método en los que tengan más spread y menos competencia.</p>
+    <div style="overflow-x:auto"><table id="t_met"></table></div>
+  </div>
+
+  <div class="card" id="e_card_mm">
+    <h2>Market making paciente</h2>
+    <p class="peq muted" style="margin:0 0 6px">No hace falta ser el primero. Elige a qué distancia del mejor precio publicas y mira la ganancia esperada según cuántas órdenes te lleguen.</p>
+    <label>Distancia al mejor precio (%) <span class="muted" id="mm_dist_txt">0,50 %</span></label>
+    <input type="range" id="mm_dist" min="0" max="2" step="0.05" value="0.5" oninput="renderMM()" style="padding:0">
+    <div class="grid3" style="margin-top:8px">
+      <div class="kpi"><small>Pon compra a</small><b id="mm_c">—</b></div>
+      <div class="kpi"><small>Pon venta a</small><b id="mm_v">—</b></div>
+      <div class="kpi" id="k_mm"><small>Margen neto</small><b id="mm_neto">—</b></div>
+    </div>
+    <div style="overflow-x:auto;margin-top:8px"><table id="t_mm"></table></div>
+    <p class="peq muted" style="margin:8px 0 0">Probabilidad de ejecución estimada: 90 % en la cima del libro y se reduce a la mitad por cada 0,4 % de distancia. Cuando registres órdenes reales en Operar, compárala con lo que de verdad te llega y ajusta la distancia.</p>
+  </div>
+
+  <div class="card" id="e_card_cruce" style="display:none">
+    <h2>Cruce USD / VES y brecha BCV</h2>
+    <div class="grid3">
+      <div class="kpi"><small>USDT/USD (Zelle) compra</small><b id="cr_uc">—</b></div>
+      <div class="kpi"><small>USDT/USD venta</small><b id="cr_uv">—</b></div>
+      <div class="kpi"><small>Bs por 1 USD vía USDT</small><b id="cr_imp">—</b></div>
+      <div class="kpi"><small>Tasa BCV</small><b id="cr_bcv">—</b></div>
+      <div class="kpi"><small>Brecha Binance vs BCV</small><b id="cr_brecha">—</b></div>
+      <div class="kpi verde"><small>Ganancia por 1.000 USD a tasa oficial</small><b id="cr_gan">—</b></div>
+    </div>
+    <p class="peq muted" id="cr_txt" style="margin:8px 0 0"></p>
+  </div>
+
+  <div class="card">
+    <h2>Mapa de calor del spread · hora × día</h2>
+    <p class="peq muted" style="margin:0 0 6px">Promedio del spread en cada hora de cada día de la semana, con las fotos guardadas (las tuyas y las del cron). Verde = spread amplio, rojo = negativo.</p>
+    <canvas id="c_heat" style="height:220px"></canvas>
+    <p class="muted peq" id="heat_txt" style="margin:6px 0 0"></p>
   </div>
 </section>
 
@@ -413,6 +476,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
 
 <nav id="nav" style="display:none">
   <button data-sec="mercado" class="activa"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>Mercado</button>
+  <button data-sec="estrategia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M3 12h2M19 12h2"/></svg>Estrategia</button>
   <button data-sec="calc"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M16 15v3"/></svg>Calcular</button>
   <button data-sec="ops"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Operar</button>
   <button data-sec="metricas"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Métricas</button>
@@ -598,6 +662,79 @@ async function cargarSnapshots(){
   snapshots = (data||[]).reverse(); dibujarLinea($('c_spread'), snapshots.map(s=>+s.spread_pct), snapshots.map(s=>new Date(s.fecha).toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit'})+' '+new Date(s.fecha).getHours()+'h'));
 }
 
+
+
+/* ===================== ESTRATEGIA ===================== */
+let estrategia=null, autoTimer=null;
+async function analizarEstrategia(silencioso=false){
+  $('e_hora').textContent = 'Analizando libro, métodos, USD y BCV…';
+  try{
+    const fiat = $('m_fiat').value;
+    const q = new URLSearchParams({ fiat, rows:'20', tipo:'todos', modo:'estrategia', patrocinados:'0', paso: String(+$('m_paso').value||0.01) });
+    const r = await fetch(CONFIG.FUNCION_PRECIOS + '?' + q.toString(), { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
+    const j = await r.json(); if(!j.ok) throw new Error(j.error||'sin datos');
+    mercado = j; estrategia = j.estrategia; renderMercado(); renderLibro(j); renderPlan(j);
+    renderOportunidades(); renderMetodos(); renderMM(); renderCruce();
+    $('e_hora').textContent = 'Analizado ' + new Date(j.hora).toLocaleString('es-VE') + ` · ${j.n_compradores} compradores / ${j.n_vendedores} vendedores sin patrocinados`;
+    const n = (estrategia?.oportunidades?.length||0) + (estrategia?.fuera_de_mercado?.length||0);
+    if (n && !silencioso) toast(`${n} oportunidad(es) detectadas`);
+    if (n && silencioso) avisar(`Semáforo P2P: ${n} oportunidad(es) en el libro`);
+    if (sb && usuario && j.precio_compra && j.precio_venta) { await sb.from('snapshots_p2p').insert({ usuario_id: usuario.id, fiat, precio_compra: j.precio_compra, precio_venta: j.precio_venta, detalle:{ estrategia:true } }); cargarHeat(); }
+  }catch(e){ $('e_hora').textContent = 'No se pudo analizar: '+e.message; }
+}
+function autoEstrategia(){ clearInterval(autoTimer); if($('e_auto').checked){ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); autoTimer=setInterval(()=>analizarEstrategia(true), 180000); toast('Vigilancia activa cada 3 minutos (deja la app abierta)'); } }
+function avisar(msg){ try{ const ctx=new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=880; g.gain.value=.15; o.start(); setTimeout(()=>{o.stop();ctx.close();},350);}catch(e){} if('Notification' in window && Notification.permission==='granted') new Notification(msg); toast(msg); }
+function renderOportunidades(){
+  const e=estrategia; if(!e) return; $('e_card_op').style.display='block';
+  const ops=e.oportunidades||[]; $('e_op_n').textContent = ops.length? `· ${ops.length}` : '· ninguna ahora';
+  $('t_op').innerHTML = ops.length ? '<tr><th>Compra a</th><th>Vende a</th><th>USDT</th><th>Neto</th></tr>' + ops.map(o=>`<tr><td>${o.comprar_a} <span class="muted peq">${o.tipo_v==='usuario'?'U':'✓'}</span><br><b>${fmt(o.precio_compra,2)}</b></td><td>${o.vender_a} <span class="muted peq">${o.tipo_c==='usuario'?'U':'✓'}</span><br><b>${fmt(o.precio_venta,2)}</b></td><td>${fmt(o.usdt,0)}<br><span class="muted peq">${fmt(o.monto_fiat,0)} fiat</span></td><td class="pos"><b>${pct(o.neto_pct)}</b></td></tr>`).join('') : '<tr><td class="muted">El libro no está cruzado en este momento. Deja la vigilancia activa.</td></tr>';
+  const f=e.fuera_de_mercado||[];
+  $('t_fuera').innerHTML = f.length ? '<tr><th>Anuncio</th><th>Precio</th><th>vs mediana</th><th>Límites</th></tr>' + f.map(a=>`<tr><td>${a.tipo==='vendedor_barato'?'<span class="tag c" style="font-size:10px">VENDE barato</span>':'<span class="tag v" style="font-size:10px">COMPRA caro</span>'} ${a.quien} <span class="muted peq">${a.tipo_usuario==='usuario'?'U':'✓'}</span><br><span class="muted peq">${(a.metodos||[]).slice(0,2).join(', ')}</span></td><td><b>${fmt(a.precio,2)}</b></td><td class="${a.tipo==='vendedor_barato'?'pos':'pos'}">${pct(Math.abs(a.vs_mediana_pct))}</td><td class="peq">${fmt(a.minimo,0)}–${fmt(a.maximo,0)}</td></tr>`).join('') : '<tr><td class="muted">Nadie está fuera de mercado ahora mismo.</td></tr>';
+}
+function renderMetodos(){
+  const e=estrategia; if(!e?.por_metodo?.length) return; $('e_card_met').style.display='block';
+  const mejor = e.por_metodo[0]?.spread_pct;
+  $('t_met').innerHTML = '<tr><th>Método</th><th>Compran / venden</th><th>Mejor compra</th><th>Mejor venta</th><th>Spread</th></tr>' + e.por_metodo.map(m=>`<tr ${m.spread_pct===mejor?'style="color:var(--green);font-weight:700"':''}><td>${m.nombre}</td><td class="muted">${m.compradores} / ${m.vendedores}</td><td>${m.mejor_compra?fmt(m.mejor_compra,2):'—'}</td><td>${m.mejor_venta?fmt(m.mejor_venta,2):'—'}</td><td class="${(m.spread_pct||0)>=0?'pos':'neg'}">${m.spread_pct===null?'—':pct(m.spread_pct)}</td></tr>`).join('');
+}
+function renderMM(){
+  const d=+$('mm_dist').value; $('mm_dist_txt').textContent = fmt(d,2)+' %';
+  if(!mercado?.precio_compra||!mercado?.precio_venta){ $('mm_c').textContent=$('mm_v').textContent=$('mm_neto').textContent='—'; $('t_mm').innerHTML='<tr><td class="muted">Analiza el mercado para calcular.</td></tr>'; return; }
+  const dec = mercado.precio_compra>=100?2:4;
+  const pb = +(mercado.precio_compra*(1-d/100)).toFixed(dec), ps = +(mercado.precio_venta*(1+d/100)).toFixed(dec);
+  const cap = +perfil.capital_bs||10000; const r = calcularCiclo({capital:cap, pb, ps, ...parametrosDesdePerfil()}); const sem=semaforoPara(r.margen);
+  $('mm_c').textContent=fmt(pb,dec); $('mm_v').textContent=fmt(ps,dec); $('mm_neto').textContent=pct(r.margen); $('mm_neto').className=r.margen>=0?'pos':'neg'; $('k_mm').className='kpi '+sem.clase;
+  // curva de ejecución estimada: 90 % en la cima, cae a la mitad cada 0,4 % de distancia
+  let h='<tr><th>Distancia</th><th>Margen neto</th><th>Prob. ejecución/h</th><th>Ganancia esperada/h</th></tr>';
+  const capU = cap/mercado.precio_compra;
+  for (const dd of [0,0.25,0.5,0.75,1,1.5,2]){
+    const pb2=mercado.precio_compra*(1-dd/100), ps2=mercado.precio_venta*(1+dd/100); const rr=calcularCiclo({capital:cap,pb:pb2,ps:ps2,...parametrosDesdePerfil()});
+    const prob = 0.9*Math.pow(0.5, dd/0.4); const ev = prob*rr.neta;
+    h+=`<tr ${Math.abs(dd-d)<0.13?'style="color:var(--green);font-weight:700"':''}><td>${fmt(dd,2)} %</td><td class="${rr.margen>=0?'pos':'neg'}">${pct(rr.margen)}</td><td>${fmt(prob*100,0)} %</td><td class="${ev>=0?'pos':'neg'}">${fmt(ev,0)} ${mercado.fiat}</td></tr>`;
+  }
+  $('t_mm').innerHTML=h;
+}
+function renderCruce(){
+  const e=estrategia; if(!e) return; $('e_card_cruce').style.display='block';
+  const u=e.usd||{};
+  $('cr_uc').textContent = u.mejor_compra?fmt(u.mejor_compra,3):'—'; $('cr_uv').textContent = u.mejor_venta?fmt(u.mejor_venta,3):'—';
+  $('cr_imp').textContent = u.implicita_ves_por_usd?fmt(u.implicita_ves_por_usd,2):'—';
+  $('cr_bcv').textContent = e.bcv?fmt(e.bcv,2):'no disponible'; $('cr_brecha').textContent = e.brecha_bcv_pct!==null&&e.brecha_bcv_pct!==undefined?pct(e.brecha_bcv_pct):'—';
+  $('cr_gan').textContent = e.ganancia_por_1000usd_oficial?fmt(e.ganancia_por_1000usd_oficial,0)+' Bs':'—';
+  $('cr_txt').textContent = e.bcv ? `Si consigues dólares a tasa oficial (${fmt(e.bcv,2)}) y los vendes como USDT en P2P a ${fmt(mercado.precio_venta,2)}, cada 1.000 USD dejan ${fmt(e.ganancia_por_1000usd_oficial,0)} Bs después de la comisión maker. Vía Zelle: con 1 USD compras ${u.mejor_venta?fmt(1/u.mejor_venta,4):'—'} USDT y los vendes por ${u.implicita_ves_por_usd?fmt(u.implicita_ves_por_usd,2):'—'} Bs.` : 'No se pudo leer la tasa BCV; el cruce vía Zelle sigue siendo válido.';
+}
+async function cargarHeat(){
+  if(!sb||!usuario) return;
+  const { data } = await sb.from('snapshots_p2p').select('fecha,spread_pct').eq('fiat',$('m_fiat').value).order('fecha',{ascending:false}).limit(2000);
+  const g = {}; for (const s of (data||[])){ const d=new Date(s.fecha); const k=d.getDay()+'-'+d.getHours(); g[k]=g[k]||[]; g[k].push(+s.spread_pct); }
+  dibujarHeat($('c_heat'), g); $('heat_txt').textContent = `${(data||[]).length} fotos del mercado. ` + ((data||[]).length<50 ? 'Activa el cron de la migración v7 para llenar el mapa sin abrir la app.' : 'Las horas verdes son tus franjas para tener anuncios encendidos.');
+}
+function dibujarHeat(c, g){
+  const {ctx,w,h}=prepCanvas(c); const dias=['Do','Lu','Ma','Mi','Ju','Vi','Sa']; const left=28, top=14; const cw=(w-left)/24, ch=(h-top)/7;
+  ctx.font='9px system-ui'; ctx.fillStyle='#8A94A8'; ctx.textAlign='center'; for(let hh=0;hh<24;hh+=3) ctx.fillText(hh+'h', left+hh*cw+cw/2, 10);
+  ctx.textAlign='right'; dias.forEach((d,i)=>ctx.fillText(d, left-4, top+i*ch+ch/2+3));
+  for(let d=0;d<7;d++) for(let hh=0;hh<24;hh++){ const v=g[d+'-'+hh]; ctx.fillStyle = v ? colorSpread(v.reduce((a,b)=>a+b,0)/v.length) : 'rgba(255,255,255,.04)'; ctx.fillRect(left+hh*cw+1, top+d*ch+1, cw-2, ch-2); }
+}
+function colorSpread(s){ if(s<0) return 'rgba(255,77,94,.75)'; if(s<0.5) return 'rgba(255,195,0,.55)'; if(s<1) return 'rgba(34,224,107,.55)'; return 'rgba(34,224,107,.95)'; }
 
 /* ===================== PLAN DE ANUNCIOS ===================== */
 function renderPlan(j){
@@ -852,7 +989,7 @@ async function cargarPerfil(){
 }
 
 /* ===================== AUTH / NAVEGACIÓN ===================== */
-function irA(sec){ document.querySelectorAll('main section').forEach(s=>s.classList.toggle('activa',s.id===sec)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('activa',b.dataset.sec===sec)); window.scrollTo(0,0); if(sec==='mercado') cargarSnapshots(); if(sec==='metricas') renderMetricas(); }
+function irA(sec){ document.querySelectorAll('main section').forEach(s=>s.classList.toggle('activa',s.id===sec)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('activa',b.dataset.sec===sec)); window.scrollTo(0,0); if(sec==='mercado') cargarSnapshots(); if(sec==='metricas') renderMetricas(); if(sec==='estrategia'){ renderMM(); cargarHeat(); } }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>irA(b.dataset.sec));
 function mostrarApp(){ $('nav').style.display='flex'; irA('mercado'); llenarAnios(); renderImpuestos(); renderMetricas(); $('who').textContent = usuario ? (perfil.nombre||usuario.email) : 'modo invitado'; $('a_info').textContent = usuario ? `Sesión: ${usuario.email}` : 'Sin cuenta: los datos no se guardan en la nube.'; }
 async function entrar(){ if(!sb) return $('l_msg').textContent='Configura Supabase en CONFIG.'; const { data, error } = await sb.auth.signInWithPassword({ email:$('l_email').value.trim(), password:$('l_pass').value }); if (error) return $('l_msg').textContent=error.message; usuario=data.user; await arrancar(); }
