@@ -180,6 +180,62 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     <p class="muted peq" style="margin:8px 0 0"><span class="tag c" style="font-size:10px">✓</span> comerciante verificado · <span class="tag v" style="font-size:10px">U</span> usuario normal · ★ patrocinado o de bloque (solo se ven si marcas la casilla). Límites = monto mínimo y máximo en fiat que acepta cada anuncio; si tu orden no cabe, el anuncio no cuenta para el semáforo.</p>
   </div>
 
+
+  <div class="card" id="card_plan" style="display:none">
+    <h2>Plan de anuncios · comprar chico, vender grande</h2>
+    <p class="peq muted" style="margin:0 0 8px">Por cada tamaño de orden solo compiten los anuncios que aceptan ese monto. La app busca el tramo donde puedes <b>comprar más barato</b> y el tramo donde puedes <b>vender más caro</b>, y arma los dos anuncios.</p>
+    <div style="overflow-x:auto"><table id="t_tramos"></table></div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="kpi verde" style="padding:14px"><small>Anuncio de COMPRA</small><b id="p_c_precio">—</b><span class="peq muted" id="p_c_lim"></span></div>
+      <div class="kpi verde" style="padding:14px"><small>Anuncio de VENTA</small><b id="p_v_precio">—</b><span class="peq muted" id="p_v_lim"></span></div>
+    </div>
+    <div class="grid3" style="margin-top:8px">
+      <div class="kpi"><small>Spread del plan</small><b id="p_spread">—</b></div>
+      <div class="kpi" id="k_pneto"><small>Margen neto</small><b id="p_neto">—</b></div>
+      <div class="kpi"><small>Ganancia por 1.000 USDT rotados</small><b id="p_gan">—</b></div>
+    </div>
+    <p class="peq muted" id="p_nota" style="margin:8px 0 0"></p>
+    <div class="fila" style="margin-top:10px">
+      <button class="sec" style="flex:1" onclick="prepararPublicar('COMPRA')">Preparar anuncio de compra</button>
+      <button class="sec" style="flex:1" onclick="prepararPublicar('VENTA')">Preparar anuncio de venta</button>
+    </div>
+  </div>
+
+  <div class="card" id="card_pub" style="display:none">
+    <h2>Publicar en Binance</h2>
+    <div class="segment" style="margin-bottom:10px"><button class="activa" id="pub_b_c" onclick="setPubTipo('COMPRA')">Compro USDT</button><button id="pub_b_v" onclick="setPubTipo('VENTA')">Vendo USDT</button></div>
+    <div class="grid2">
+      <div><label>Precio (fiat por USDT)</label><input id="pub_precio" type="number" step="any"></div>
+      <div><label>Cantidad de USDT en el anuncio</label><input id="pub_cant" type="number" step="any" placeholder="Ej. 500"></div>
+      <div><label>Límite mínimo por orden (fiat)</label><input id="pub_min" type="number" step="any"></div>
+      <div><label>Límite máximo por orden (fiat)</label><input id="pub_max" type="number" step="any"></div>
+      <div><label>Minutos para pagar</label><select id="pub_min_pago"><option>15</option><option>30</option><option>45</option><option>60</option></select></div>
+      <div><label>Moneda</label><input id="pub_fiat" readonly></div>
+    </div>
+    <label>Métodos de pago (los de tu cuenta Binance)</label>
+    <div id="pub_metodos" class="fila peq muted" style="gap:6px">Pulsa "Cargar mis métodos".</div>
+    <div class="fila" style="margin-top:6px"><button class="chico sec" onclick="cargarMetodosBinance()">Cargar mis métodos</button></div>
+    <label>Condiciones del anuncio (opcional)</label><input id="pub_cond" placeholder="Ej. Solo pagos desde cuenta propia. No terceros.">
+    <div class="aviso peq" style="margin-top:10px" id="pub_resumen">Revisa todo antes de publicar: el anuncio queda visible al instante en Binance.</div>
+    <div class="fila" style="margin-top:10px">
+      <button style="flex:1" onclick="publicarAnuncio()">Publicar en Binance</button>
+      <button class="sec" style="flex:1" onclick="copiarAnuncio()">Copiar datos</button>
+    </div>
+    <details style="margin-top:10px"><summary>Mis anuncios en Binance</summary>
+      <div class="fila" style="margin:6px 0"><button class="chico sec" onclick="misAnuncios()">Actualizar lista</button></div>
+      <div style="overflow-x:auto"><table id="t_mis"></table></div>
+    </details>
+    <details style="margin-top:6px"><summary>¿Cómo activo la publicación automática?</summary>
+      <ol class="peq muted" style="padding-left:18px;margin:6px 0">
+        <li>Debes ser <b>comerciante verificado</b> en Binance P2P (si no, Binance responde "403 permiso denegado").</li>
+        <li>En Binance: Perfil → Gestión de API → crear clave con permiso de lectura y de P2P (C2C). Restringe por IP si puedes.</li>
+        <li>En Supabase: Edge Functions → Secrets → añade <code>BINANCE_API_KEY</code> y <code>BINANCE_API_SECRET</code>.</li>
+        <li>Despliega la función <code>p2p-publicar</code> igual que hiciste con p2p-precios.</li>
+      </ol>
+      <p class="peq muted">Sin API, usa "Copiar datos" y publica a mano en Binance con esos mismos valores.</p>
+    </details>
+  </div>
+
   <div class="card">
     <h2>Historial del spread</h2>
     <canvas id="c_spread"></canvas>
@@ -375,7 +431,8 @@ const CONFIG = {
   SUPABASE_URL: "https://igrmvfzpwjeosugeqnoj.supabase.co",
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlncm12Znpwd2plb3N1Z2Vxbm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNTkxNTksImV4cCI6MjEwNDgzNTE1OX0.9NXlHsOqTV7PH4qfReQU3KDQS3iD159zObOynw_umwo",
   // La Edge Function se despliega con: supabase functions deploy p2p-precios --no-verify-jwt
-  get FUNCION_PRECIOS(){ return this.SUPABASE_URL + "/functions/v1/p2p-precios"; }
+  get FUNCION_PRECIOS(){ return this.SUPABASE_URL + "/functions/v1/p2p-precios"; },
+  get FUNCION_PUBLICAR(){ return this.SUPABASE_URL + "/functions/v1/p2p-publicar"; }
 };
 
 /* ===================== ESTADO ===================== */
@@ -468,7 +525,7 @@ function calcular(){
   window.scrollTo({top:$('c_res').offsetTop-70, behavior:'smooth'});
 }
 function sugeridosACalc(){ if(!mercado||!mercado.precio_compra) return toast('Primero actualiza el mercado'); const modo=$('m_modo').value; const pb=(mercado.sugerencia&&modo==='superar')?mercado.sugerencia.compra:mercado.precio_compra; const ps=(mercado.sugerencia&&modo==='superar')?mercado.sugerencia.venta:mercado.precio_venta; $('c_pb').value=pb; $('c_ps').value=ps; $('c_fiat').value=mercado.fiat||'VES'; irA('calc'); if(+$('c_capital').value>0) calcular(); }
-function calcAlMercado(){ if(!ultimoCalc) return; mercado = {precio_compra:ultimoCalc.p.pb, precio_venta:ultimoCalc.p.ps, fiat:ultimoCalc.p.fiat, manual:true, hora:new Date().toISOString()}; renderMercado(); irA('mercado'); }
+function calcAlMercado(){ if(!ultimoCalc) return; mercado = {precio_compra:ultimoCalc.p.pb, precio_venta:ultimoCalc.p.ps, fiat:ultimoCalc.p.fiat, manual:true, hora:new Date().toISOString()}; renderMercado(); $('card_plan').style.display='none'; irA('mercado'); }
 function usarManual(){ $('c_pb').value && $('c_ps').value ? calcAlMercado() : (irA('calc'), toast('Ingresa los precios y calcula')); }
 
 /* ===================== MERCADO ===================== */
@@ -499,7 +556,7 @@ async function actualizarMercado(){
     const j = await r.json();
     if (!j.ok) throw new Error(j.error||'sin datos');
     if (j.metodos_disponibles?.length){ metodosVistos[fiat] = j.metodos_disponibles; try{ localStorage.setItem('semaforo_metodos', JSON.stringify(metodosVistos)); }catch(e){} cargarMetodos(); if(pay) $('m_pay').value = pay; }
-    mercado = j; renderMercado(); renderLibro(j);
+    mercado = j; renderMercado(); renderLibro(j); renderPlan(j);
     if (!j.precio_compra || !j.precio_venta) { $('m_hora').textContent += ' · Sin anuncios que cumplan los filtros: prueba con otro método o monto.'; }
     if (sb && usuario && j.precio_compra && j.precio_venta) {
       await sb.from('snapshots_p2p').insert({ usuario_id: usuario.id, fiat, precio_compra: j.precio_compra, precio_venta: j.precio_venta, detalle: { mediana_compra:j.mediana_compra, mediana_venta:j.mediana_venta, prof_c:j.profundidad_compra_usdt, prof_v:j.profundidad_venta_usdt, filtros:j.filtros } });
@@ -540,6 +597,79 @@ async function cargarSnapshots(){
   const { data } = await sb.from('snapshots_p2p').select('fecha,spread_pct,precio_compra,precio_venta').eq('usuario_id',usuario.id).order('fecha',{ascending:false}).limit(120);
   snapshots = (data||[]).reverse(); dibujarLinea($('c_spread'), snapshots.map(s=>+s.spread_pct), snapshots.map(s=>new Date(s.fecha).toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit'})+' '+new Date(s.fecha).getHours()+'h'));
 }
+
+
+/* ===================== PLAN DE ANUNCIOS ===================== */
+function renderPlan(j){
+  if(!j.tramos) { $('card_plan').style.display='none'; return; }
+  $('card_plan').style.display='block';
+  const d = (j.precio_compra>=100)?2:4;
+  let h = '<tr><th>Orden (USDT)</th><th>Compiten</th><th>Pon compra a</th><th>Pon venta a</th><th>Spread</th></tr>';
+  const mc = j.plan?.compra?.precio, mv = j.plan?.venta?.precio;
+  for (const t of j.tramos){
+    const c1 = t.pon_compra===mc?' style="color:var(--green);font-weight:700"':'', c2 = t.pon_venta===mv?' style="color:var(--green);font-weight:700"':'';
+    h += `<tr><td>${fmt(t.usdt,0)}</td><td class="muted">${t.competencia_compra} / ${t.competencia_venta}</td><td${c1}>${t.pon_compra?fmt(t.pon_compra,d):'—'}${t.libre_compra?' <span class="muted peq">libre</span>':''}</td><td${c2}>${t.pon_venta?fmt(t.pon_venta,d):'—'}${t.libre_venta?' <span class="muted peq">libre</span>':''}</td><td class="${t.spread_pct>=0?'pos':'neg'}">${pct(t.spread_pct)}</td></tr>`;
+  }
+  $('t_tramos').innerHTML = h;
+  const p = j.plan;
+  if (!p){ $('p_nota').textContent='No hay anuncios suficientes para armar un plan con estos filtros.'; return; }
+  $('p_c_precio').textContent = fmt(p.compra.precio,d); $('p_c_lim').textContent = `órdenes de ${fmt(p.compra.min_usdt,0)} a ${fmt(p.compra.max_usdt,0)} USDT · límites ${fmt(p.compra.limite_min_fiat,0)} – ${fmt(p.compra.limite_max_fiat,0)} ${j.fiat}${p.compra.libre?' · sin competencia':''}`;
+  $('p_v_precio').textContent = fmt(p.venta.precio,d);  $('p_v_lim').textContent = `órdenes de ${fmt(p.venta.min_usdt,0)} a ${fmt(p.venta.max_usdt,0)} USDT · límites ${fmt(p.venta.limite_min_fiat,0)} – ${fmt(p.venta.limite_max_fiat,0)} ${j.fiat}${p.venta.libre?' · sin competencia':''}`;
+  const r = calcularCiclo({ capital: 1000*p.compra.precio, pb:p.compra.precio, ps:p.venta.precio, ...parametrosDesdePerfil() });
+  const sem = semaforoPara(r.margen);
+  $('p_spread').textContent = pct(p.spread_pct); $('p_neto').textContent = pct(r.margen); $('p_neto').className = r.margen>=0?'pos':'neg'; $('k_pneto').className='kpi '+sem.clase;
+  $('p_gan').textContent = fmt(r.neta,0)+' '+j.fiat; $('p_gan').className = r.neta>=0?'pos':'neg';
+  const ordenes = Math.ceil(1000 / p.compra.max_usdt);
+  $('p_nota').textContent = `${sem.titulo}. Para rotar 1.000 USDT necesitarías unas ${ordenes} órdenes de compra de hasta ${fmt(p.compra.max_usdt,0)} USDT y ${Math.ceil(1000/p.venta.max_usdt)} de venta. Comprar en tramos chicos da mejor precio pero exige más órdenes (y más tiempo liberando).`;
+}
+function prepararPublicar(tipo){
+  if(!mercado?.plan) return toast('Primero actualiza el mercado');
+  const p = tipo==='COMPRA' ? mercado.plan.compra : mercado.plan.venta;
+  $('card_pub').style.display='block'; setPubTipo(tipo);
+  $('pub_precio').value = p.precio; $('pub_min').value = p.limite_min_fiat; $('pub_max').value = p.limite_max_fiat; $('pub_fiat').value = mercado.fiat;
+  if(!$('pub_cant').value) $('pub_cant').value = p.max_usdt;
+  resumenPub(); window.scrollTo({top:$('card_pub').offsetTop-70, behavior:'smooth'});
+}
+let pubTipo='COMPRA', metodosBinance=[];
+function setPubTipo(t){ pubTipo=t; $('pub_b_c').classList.toggle('activa',t==='COMPRA'); $('pub_b_v').classList.toggle('activa',t==='VENTA'); resumenPub(); }
+function resumenPub(){
+  const sel = [...document.querySelectorAll('#pub_metodos input:checked')].map(i=>i.dataset.nombre);
+  $('pub_resumen').innerHTML = `<b>${pubTipo==='COMPRA'?'COMPRO':'VENDO'} USDT</b> a <b>${fmt(+$('pub_precio').value, +$('pub_precio').value>=100?2:4)} ${$('pub_fiat').value}</b> · ${fmt(+$('pub_cant').value,2)} USDT en el anuncio · órdenes de ${fmt(+$('pub_min').value,0)} a ${fmt(+$('pub_max').value,0)} ${$('pub_fiat').value} · ${$('pub_min_pago').value} min para pagar · métodos: ${sel.length?sel.join(', '):'<span class="neg">ninguno</span>'}`;
+}
+['pub_precio','pub_cant','pub_min','pub_max','pub_min_pago'].forEach(id=>document.addEventListener('input',e=>{ if(e.target.id===id) resumenPub(); }));
+async function llamarPublicar(body){
+  if(!sb||!usuario) throw new Error('Inicia sesión para usar la publicación.');
+  const { data } = await sb.auth.getSession();
+  const r = await fetch(CONFIG.FUNCION_PUBLICAR, { method:'POST', headers:{ 'Content-Type':'application/json', apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: 'Bearer '+data.session.access_token }, body: JSON.stringify(body) });
+  const j = await r.json(); if(!j.ok) throw new Error(j.error||'error'); return j;
+}
+async function cargarMetodosBinance(){
+  try{
+    const j = await llamarPublicar({ accion:'metodos' });
+    metodosBinance = Array.isArray(j.metodos)? j.metodos : (j.metodos?.data||[]);
+    if(!metodosBinance.length) return $('pub_metodos').textContent = 'Binance no devolvió métodos de pago. Agrégalos en tu cuenta de Binance (P2P → Métodos de pago).';
+    $('pub_metodos').innerHTML = metodosBinance.map((m,i)=>`<label class="fila" style="gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--line);padding:6px 10px;border-radius:999px;cursor:pointer"><input type="checkbox" data-i="${i}" data-nombre="${m.tradeMethodName||m.identifier}" onchange="resumenPub()" style="width:16px;height:16px;margin:0"> ${m.tradeMethodName||m.identifier}</label>`).join('');
+  }catch(e){ $('pub_metodos').textContent = e.message; }
+}
+async function publicarAnuncio(){
+  const idx = [...document.querySelectorAll('#pub_metodos input:checked')].map(i=>+i.dataset.i);
+  if(!idx.length) return toast('Selecciona al menos un método de pago');
+  const anuncio = { tipo: pubTipo, fiat: $('pub_fiat').value, precio: +$('pub_precio').value, cantidad_usdt: +$('pub_cant').value, limite_min_fiat: +$('pub_min').value, limite_max_fiat: +$('pub_max').value, minutos_pago: +$('pub_min_pago').value, condiciones: $('pub_cond').value, metodos: idx.map(i=>({ payId: metodosBinance[i].payId, identifier: metodosBinance[i].identifier })) };
+  if(!confirm(`¿Publicar en Binance?\n${pubTipo} USDT a ${anuncio.precio} ${anuncio.fiat}\n${anuncio.cantidad_usdt} USDT · límites ${anuncio.limite_min_fiat}–${anuncio.limite_max_fiat}`)) return;
+  try{ const j = await llamarPublicar({ accion:'publicar', anuncio }); toast('Anuncio publicado'); console.log(j); misAnuncios(); }
+  catch(e){ toast('No se pudo publicar: '+e.message); }
+}
+function copiarAnuncio(){ resumenPub(); navigator.clipboard.writeText($('pub_resumen').innerText).then(()=>toast('Datos copiados: pégalos al crear el anuncio en Binance')); }
+async function misAnuncios(){
+  try{
+    const j = await llamarPublicar({ accion:'mis_anuncios' });
+    const lista = j.anuncios?.data || j.anuncios || [];
+    let h='<tr><th>Tipo</th><th>Precio</th><th>Límites</th><th>Estado</th><th></th></tr>';
+    for (const a of lista){ const ad=a.adv||a; h+=`<tr><td>${ad.tradeType==='BUY'||ad.tradeType===0?'COMPRA':'VENTA'}</td><td>${fmt(+ad.price,2)}</td><td class="peq">${fmt(+ad.minSingleTransAmount,0)}–${fmt(+ad.maxSingleTransAmount,0)}</td><td class="peq">${ad.advStatus===1||ad.advStatus==='ONLINE'?'<span class="pos">online</span>':'offline'}</td><td><button class="chico sec" onclick="estadoAnuncio('${ad.advNo}',${ad.advStatus===1||ad.advStatus==='ONLINE'?2:1})">${ad.advStatus===1||ad.advStatus==='ONLINE'?'Apagar':'Encender'}</button></td></tr>`; }
+    $('t_mis').innerHTML = lista.length? h : '<tr><td class="muted">No tienes anuncios.</td></tr>';
+  }catch(e){ $('t_mis').innerHTML = `<tr><td class="muted">${e.message}</td></tr>`; }
+}
+async function estadoAnuncio(advNo, status){ try{ await llamarPublicar({ accion:'estado', advNos:[advNo], status }); toast(status===1?'Anuncio encendido':'Anuncio apagado'); misAnuncios(); }catch(e){ toast(e.message); } }
 
 /* ===================== OPERACIONES ===================== */
 function setTipo(btn){ tipoOp = btn.dataset.tipo; document.querySelectorAll('#ops .segment button').forEach(b=>b.classList.toggle('activa',b===btn)); autoFee(); }
