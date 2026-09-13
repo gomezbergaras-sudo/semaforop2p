@@ -283,6 +283,37 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
   </div>
 
 
+
+  <div class="card" id="e_card_mis">
+    <div class="cinta"></div>
+    <h2>Mis anuncios · precios de referencia</h2>
+    <p class="ayuda">Tú publicas. La app te dice <b>quién vende más barato</b> (y con qué volumen mínimo) y <b>quién compra más caro</b>, para que fijes tu precio de compra y de venta, y te muestra lo que ganas según el volumen y las vueltas.</p>
+    <div class="grid3">
+      <div><label>Volumen por vuelta (USDT)</label><input id="mi_vol" type="number" value="500"></div>
+      <div><label>Vueltas por día</label><input id="mi_vueltas" type="number" step="0.5" value="2"></div>
+      <div><label>Mi precio</label><select id="mi_modo" onchange="renderMis()"><option value="igualar">Igualar la referencia</option><option value="mejorar">Mejorar por un paso</option></select></div>
+    </div>
+    <button style="width:100%;margin-top:10px" onclick="buscarReferencias()">Buscar referencias en el libro</button>
+    <p class="muted peq" id="mi_hora" style="margin:8px 0 0"></p>
+    <div id="mi_res" style="display:none">
+      <h2 style="margin-top:14px">Quién vende más barato (referencia para mi COMPRA)</h2>
+      <div style="overflow-x:auto"><table id="t_mi_v"></table></div>
+      <h2 style="margin-top:14px">Quién compra más caro (referencia para mi VENTA)</h2>
+      <div style="overflow-x:auto"><table id="t_mi_c"></table></div>
+      <h2 style="margin-top:14px">Mis dos anuncios</h2>
+      <div class="grid3">
+        <div class="kpi verde"><small>Publico COMPRA a</small><b id="mi_pc">—</b></div>
+        <div class="kpi verde"><small>Publico VENTA a</small><b id="mi_pv">—</b></div>
+        <div class="kpi" id="k_mi"><small>% ganancia neta / vuelta</small><b id="mi_pct">—</b></div>
+      </div>
+      <p class="peq muted" id="mi_txt" style="margin:8px 0 0"></p>
+      <h2 style="margin-top:14px">Lo que ganaría según volumen y vueltas</h2>
+      <div style="overflow-x:auto"><table id="t_mi_g"></table></div>
+      <p class="peq muted" style="margin:8px 0 0">Neto con comisión maker de Binance en ambos anuncios y la comisión bancaria simple de Ajustes. Mes = 26 días operativos.</p>
+      <div class="fila" style="margin-top:8px"><button class="sec" style="flex:1" onclick="misAlMotor()">Verificar en el motor con costos reales</button><button class="sec" style="flex:1" onclick="misAPublicar()">Preparar para publicar</button></div>
+    </div>
+  </div>
+
   <div class="card" id="e_card_dif">
     <h2>Diferencial cambiario · libro profundo</h2>
     <p class="peq muted" style="margin:0 0 8px">Lee hasta 100 anuncios por lado, no solo la primera fila. Busca vendedores baratos que acepten órdenes pequeñas (para comprar) y compradores con capacidad grande al precio más alto (para vender).</p>
@@ -891,6 +922,48 @@ function dibujarHeat(c, g){
 }
 function colorSpread(s){ if(s<0) return 'rgba(255,77,94,.75)'; if(s<0.5) return 'rgba(255,195,0,.55)'; if(s<1) return 'rgba(34,224,107,.55)'; return 'rgba(34,224,107,.95)'; }
 
+
+
+/* ===================== MIS ANUNCIOS (referencias) ===================== */
+let referencias=null;
+async function buscarReferencias(){
+  $('mi_hora').textContent='Leyendo el libro completo…';
+  try{
+    const q = new URLSearchParams({ fiat:$('m_fiat').value, rows:'20', tipo:'todos', modo:'diferencial', patrocinados:$('m_patro')?.checked?'1':'0', paso:String(+$('m_paso').value||0.01), paginas:'5', compra_max_usdt:'100', venta_min_usdt:'500' });
+    if (payValor()) q.set('pay', payValor());
+    const r = await fetch(CONFIG.FUNCION_PRECIOS+'?'+q.toString(), { headers:{ apikey: CONFIG.SUPABASE_ANON_KEY } });
+    const j = await r.json(); if(!j.ok) throw new Error(j.error||'sin datos');
+    referencias = j.diferencial?.referencias; diferencial = j.diferencial; mercado = mercado || j; referencias.fiat = j.fiat; referencias.paso = +$('m_paso').value||0.01;
+    $('mi_hora').textContent = `Libro leído: ${j.diferencial.anuncios_vendedores} vendedores y ${j.diferencial.anuncios_compradores} compradores · ${new Date(j.hora).toLocaleTimeString('es-VE')}`;
+    renderMis();
+  }catch(e){ $('mi_hora').textContent='No se pudo leer: '+e.message; }
+}
+function renderMis(){
+  const R=referencias; if(!R) return; $('mi_res').style.display='block';
+  const F=R.fiat||'VES'; const dec = (R.vendedores_mas_baratos[0]?.precio||100)>=100?2:4;
+  const badge = t => `<span class="muted peq">${t==='usuario'?'U':'✓'}</span>`;
+  const fila = (a, marca) => `<tr ${marca?'style="color:var(--green);font-weight:700"':''}><td>${a.quien} ${badge(a.tipo)}<br><span class="muted peq">${a.metodos.join(', ')} · ${a.ordenes_mes} órd · ${fmt(a.tasa*100,0)} %</span></td><td><b>${fmt(a.precio,dec)}</b></td><td class="peq">${fmt(a.min_usdt,0)}</td><td class="peq">${fmt(a.max_usdt,0)}</td></tr>`;
+  const vm = R.vendedor_min_volumen, cm = R.comprador_min_volumen;
+  $('t_mi_v').innerHTML = '<tr><th>Vendedor</th><th>Precio</th><th>Vol. mín (USDT)</th><th>Vol. máx</th></tr>' + R.vendedores_mas_baratos.map(a=>fila(a, vm && a.quien===vm.quien && a.precio===vm.precio)).join('');
+  $('t_mi_c').innerHTML = '<tr><th>Comprador</th><th>Precio</th><th>Vol. mín (USDT)</th><th>Vol. máx</th></tr>' + R.compradores_mas_caros.map(a=>fila(a, cm && a.quien===cm.quien && a.precio===cm.precio)).join('');
+  const v0 = R.vendedores_mas_baratos[0], c0 = R.compradores_mas_caros[0]; if(!v0||!c0){ $('mi_txt').textContent='No hay suficientes anuncios.'; return; }
+  const paso = $('mi_modo').value==='mejorar' ? (R.paso||0.01) : 0;
+  const pc = +(v0.precio - paso).toFixed(dec), pv = +(c0.precio + paso).toFixed(dec);
+  const maker = +perfil.fee_maker_pct/100, banco = +perfil.fee_banco_pct/100;
+  const netoPct = ((1-maker)*(1-maker)*pv/pc - 1)*100 - banco*100*2;  // maker en ambos anuncios + banco simple ida y vuelta
+  $('mi_pc').textContent = fmt(pc,dec); $('mi_pv').textContent = fmt(pv,dec); $('mi_pct').textContent = pct(netoPct); $('mi_pct').className = netoPct>=0?'pos':'neg'; $('k_mi').className='kpi '+semaforoPara(netoPct).clase;
+  $('mi_txt').textContent = `Referencia de compra: ${v0.quien} vende a ${fmt(v0.precio,dec)} (mínimo ${fmt(v0.min_usdt,0)} USDT)${vm&&vm.quien!==v0.quien?`; el de menor volumen mínimo entre los baratos es ${vm.quien} (${fmt(vm.min_usdt,0)} USDT a ${fmt(vm.precio,dec)})`:''}. Referencia de venta: ${c0.quien} compra a ${fmt(c0.precio,dec)} (mínimo ${fmt(c0.min_usdt,0)} USDT)${cm&&cm.quien!==c0.quien?`; el de menor volumen mínimo es ${cm.quien} (${fmt(cm.min_usdt,0)} USDT a ${fmt(cm.precio,dec)})`:''}. Spread bruto ${pct((pv/pc-1)*100)}; neto ${pct(netoPct)} tras maker ${fmt(perfil.fee_maker_pct,2)} % por lado y banco ${fmt(perfil.fee_banco_pct,2)} %.`;
+  const base = +$('mi_vol').value||500, vueltasBase = +$('mi_vueltas').value||2;
+  const vols = [...new Set([base*0.5, base, base*2, base*5, base*10].map(x=>Math.round(x)))].filter(x=>x>0);
+  const vueltas = [...new Set([1, vueltasBase, vueltasBase*2, vueltasBase*3].map(x=>+x.toFixed(1)))].sort((a,b)=>a-b);
+  let h = '<tr><th>Volumen / vuelta</th>' + vueltas.map(v=>`<th>${fmt(v,1)} vuelta${v===1?'':'s'}/día</th>`).join('') + '</tr>';
+  for (const vol of vols){
+    h += `<tr><td>${fmt(vol,0)} USDT<br><span class="muted peq">${fmt(vol*pc,0)} ${F}</span></td>` + vueltas.map(v=>{ const dia = vol*pc*netoPct/100*v; const mes = dia*26; return `<td class="${dia>=0?'pos':'neg'}"><b>${fmt(dia,0)}</b>/día<br><span class="peq">${fmt(mes,0)}/mes</span></td>`; }).join('') + '</tr>';
+  }
+  $('t_mi_g').innerHTML = h;
+}
+function misAlMotor(){ if(!referencias) return toast('Primero busca referencias'); $('c_pb').value=$('mi_pc').textContent.replace(/\./g,'').replace(',','.'); $('c_ps').value=$('mi_pv').textContent.replace(/\./g,'').replace(',','.'); $('c_rol_c').value='MAKER'; $('c_rol_v').value='MAKER'; const vol=+$('mi_vol').value||500; $('c_capital').value=Math.round(vol*(+$('c_pb').value)); $('c_ciclos').value=+$('mi_vueltas').value||2; irA('calc'); toast('Elige tus rutas bancarias y calcula'); }
+function misAPublicar(){ if(!referencias) return toast('Primero busca referencias'); const pc=+$('mi_pc').textContent.replace(/\./g,'').replace(',','.'), pv=+$('mi_pv').textContent.replace(/\./g,'').replace(',','.'); const vol=+$('mi_vol').value||500; mercado = mercado||{}; mercado.plan = { compra:{precio:pc,min_usdt:Math.max(10,Math.round(vol/10)),max_usdt:vol,limite_min_fiat:Math.round(Math.max(10,vol/10)*pc),limite_max_fiat:Math.round(vol*pc)}, venta:{precio:pv,min_usdt:Math.max(10,Math.round(vol/10)),max_usdt:vol,limite_min_fiat:Math.round(Math.max(10,vol/10)*pv),limite_max_fiat:Math.round(vol*pv)} }; mercado.fiat = referencias.fiat||'VES'; irA('mercado'); $('card_pub').style.display='block'; prepararPublicar('COMPRA'); toast('Formulario listo: revisa y publica compra, luego venta'); }
 
 /* ===================== DIFERENCIAL CAMBIARIO ===================== */
 let diferencial=null;
