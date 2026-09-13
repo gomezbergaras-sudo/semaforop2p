@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Semáforo P2P</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='18' y='4' width='28' height='56' rx='9' fill='%2323272F'/%3E%3Ccircle cx='32' cy='15' r='7' fill='%23FF4D4D'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23FFC300'/%3E%3Ccircle cx='32' cy='49' r='7' fill='%2322E06B'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#0A0D13; --bg2:#12161F; --card:rgba(24,29,40,.82); --card-solid:#181D28; --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+  --text:#F3F5F9; --muted:#8A94A8; --apagado:#252B38;
+  --green:#22E06B; --yellow:#FFC300; --red:#FF4D5E; --blue:#4DA3FF; --gold:#FFC300;
+  --glow:rgba(34,224,107,0); --r:20px; --pad:18px;
+  --f-display:"Sora",system-ui,sans-serif; --f-body:"Manrope",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--f-body);-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+body{padding-bottom:calc(96px + env(safe-area-inset-bottom));min-height:100vh;background:
+  radial-gradient(60% 40% at 50% -5%, var(--glow), transparent 70%),
+  radial-gradient(40% 30% at 100% 20%, rgba(77,163,255,.07), transparent 70%),
+  radial-gradient(35% 30% at 0% 60%, rgba(255,195,0,.05), transparent 70%), var(--bg);transition:background .6s}
+body[data-luz="verde"]{--glow:rgba(34,224,107,.22)} body[data-luz="amarillo"]{--glow:rgba(255,195,0,.2)} body[data-luz="rojo"]{--glow:rgba(255,77,94,.22)}
+header{position:sticky;top:0;z-index:5;padding:calc(12px + env(safe-area-inset-top)) var(--pad) 10px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:linear-gradient(180deg,rgba(10,13,19,.85),rgba(10,13,19,.35))}
+header h1{font:800 19px/1 var(--f-display);margin:0;letter-spacing:-.01em;display:flex;align-items:center;gap:10px} header h1 span{color:var(--muted);font-weight:600}
+header .who:empty{display:none} header .who{font-size:12px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);padding:5px 10px;border-radius:999px;max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logo{display:inline-flex;flex-direction:column;gap:3px;background:linear-gradient(180deg,#2A3040,#1A1F2B);border-radius:7px;padding:4px 3px;box-shadow:0 2px 8px rgba(0,0,0,.5)} .logo i{width:8px;height:8px;border-radius:50%;display:block} .logo i:nth-child(1){background:var(--red)} .logo i:nth-child(2){background:var(--yellow)} .logo i:nth-child(3){background:var(--green);box-shadow:0 0 8px var(--green)}
+main{padding:4px var(--pad) 0;max-width:640px;margin:0 auto} section{display:none} section.activa{display:block;animation:in .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card{background:var(--card);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:var(--r);padding:var(--pad);margin-bottom:14px;box-shadow:0 12px 40px -18px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.05)}
+.card h2{margin:0 0 12px;font:700 11.5px/1 var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:1.4px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px} .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px;font-weight:600}
+input,select,textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--line2);color:var(--text);border-radius:13px;padding:12px 13px;font:500 16px var(--f-body);outline:none;transition:.2s}
+input::placeholder{color:#5D667A} input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(34,224,107,.15);background:rgba(255,255,255,.06)}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A94A8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+button{border:0;border-radius:14px;padding:13px 16px;font:700 15px var(--f-body);cursor:pointer;color:#05230F;background:linear-gradient(135deg,#3BF582,#17C95C);box-shadow:0 8px 24px -8px rgba(34,224,107,.6),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .12s,box-shadow .2s}
+button:active{transform:scale(.97)} button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+button.sec{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--line2);box-shadow:none} button.peligro{background:transparent;color:var(--red);border:1px solid rgba(255,77,94,.5);box-shadow:none}
+button.chico{padding:7px 10px;font-size:13px;border-radius:10px}
+.fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kpi{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:15px;padding:12px 13px;position:relative;overflow:hidden}
+.kpi small{display:block;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;font-weight:700} .kpi b{font:700 18px/1.2 var(--f-display);display:block;margin-top:5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;letter-spacing:-.01em}
+.kpi b.pos{color:var(--green)} .kpi b.neg{color:var(--red)}
+.kpi.verde{border-color:rgba(34,224,107,.4);background:linear-gradient(135deg,rgba(34,224,107,.14),rgba(34,224,107,.03))} .kpi.amarillo{border-color:rgba(255,195,0,.4);background:linear-gradient(135deg,rgba(255,195,0,.14),rgba(255,195,0,.03))} .kpi.rojo{border-color:rgba(255,77,94,.4);background:linear-gradient(135deg,rgba(255,77,94,.14),rgba(255,77,94,.03))}
+/* ---- semáforo ---- */
+.semaforo{display:flex;align-items:center;gap:18px;padding:18px;border-radius:22px;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid var(--line2);position:relative;overflow:hidden;transition:.4s}
+.semaforo::after{content:'';position:absolute;inset:0;background:radial-gradient(80% 120% at 0% 50%,var(--halo,transparent),transparent 60%);pointer-events:none;transition:.5s}
+.luces{flex:none;display:flex;flex-direction:column;gap:9px;background:linear-gradient(180deg,#2B313F,#151923);border-radius:18px;padding:11px 10px;box-shadow:inset 0 2px 8px rgba(0,0,0,.7),0 10px 30px -10px rgba(0,0,0,.8);position:relative;z-index:1}
+.luces i{display:block;width:32px;height:32px;border-radius:50%;background:var(--apagado);box-shadow:inset 0 3px 6px rgba(0,0,0,.6);transition:.35s}
+.luces.grande i{width:50px;height:50px}
+.semaforo>div:last-child{position:relative;z-index:1;min-width:0}
+.semaforo[data-estado="rojo"]{--halo:rgba(255,77,94,.28)} .semaforo[data-estado="amarillo"]{--halo:rgba(255,195,0,.26)} .semaforo[data-estado="verde"]{--halo:rgba(34,224,107,.28)}
+.semaforo[data-estado="rojo"] .luces i:nth-child(1){background:radial-gradient(circle at 35% 30%,#FF9AA4,var(--red) 60%);box-shadow:0 0 26px rgba(255,77,94,.9),0 0 60px rgba(255,77,94,.4)}
+.semaforo[data-estado="amarillo"] .luces i:nth-child(2){background:radial-gradient(circle at 35% 30%,#FFE58A,var(--yellow) 60%);box-shadow:0 0 26px rgba(255,195,0,.9),0 0 60px rgba(255,195,0,.4)}
+.semaforo[data-estado="verde"] .luces i:nth-child(3){background:radial-gradient(circle at 35% 30%,#9DFFC1,var(--green) 60%);box-shadow:0 0 26px rgba(34,224,107,.9),0 0 60px rgba(34,224,107,.4)}
+.semaforo[data-estado="gris"] .luces i{animation:pulso 1.8s ease-in-out infinite} .semaforo[data-estado="gris"] .luces i:nth-child(2){animation-delay:.3s} .semaforo[data-estado="gris"] .luces i:nth-child(3){animation-delay:.6s}
+@keyframes pulso{50%{background:#343B4B}}
+.semaforo b{font:800 22px/1.1 var(--f-display);display:block;letter-spacing:-.02em;color:var(--text)} .semaforo p{margin:6px 0 0;color:var(--muted);font-size:13.5px;line-height:1.45}
+.semaforo[data-estado="verde"] b{color:var(--green)} .semaforo[data-estado="amarillo"] b{color:var(--yellow)} .semaforo[data-estado="rojo"] b{color:var(--red)}
+.leyenda{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)} .leyenda span{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--line);padding:5px 10px;border-radius:999px} .leyenda i{width:8px;height:8px;border-radius:50%;display:inline-block} .leyenda .v i{background:var(--green);box-shadow:0 0 6px var(--green)} .leyenda .a i{background:var(--yellow);box-shadow:0 0 6px var(--yellow)} .leyenda .r i{background:var(--red);box-shadow:0 0 6px var(--red)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ---- tablas / tags ---- */
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums} th:first-child,td:first-child{text-align:left} th{color:var(--muted);font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px} tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.3px} .tag.c{background:rgba(77,163,255,.16);color:#8FC3FF} .tag.v{background:rgba(255,195,0,.16);color:var(--yellow)}
+.pos{color:var(--green)} .neg{color:var(--red)} .muted{color:var(--muted)} .peq{font-size:12px} .centro{text-align:center}
+/* ---- nav flotante ---- */
+nav{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),600px);background:rgba(18,22,31,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line2);border-radius:24px;display:flex;padding:6px;z-index:10;box-shadow:0 20px 50px -20px rgba(0,0,0,.9)}
+nav button{flex:1;background:none;color:var(--muted);border-radius:18px;padding:9px 0 7px;font:700 10.5px var(--f-body);display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:none;position:relative;transition:.2s}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round} nav button.activa{color:var(--green);background:rgba(34,224,107,.12)}
+canvas{width:100%;height:170px;display:block}
+.segment{display:flex;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:4px} .segment button{flex:1;background:none;color:var(--muted);padding:9px;font:700 13px var(--f-body);border-radius:11px;box-shadow:none} .segment button.activa{background:var(--card-solid);color:var(--text);box-shadow:0 4px 12px -4px rgba(0,0,0,.6)}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(10px);background:#1F2633;color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:90vw;border:1px solid var(--line2);box-shadow:0 10px 30px -10px rgba(0,0,0,.8)}
+.toast.ver{opacity:1;transform:translateX(-50%)}
+.aviso{border-left:3px solid var(--yellow);padding:10px 14px;background:rgba(255,195,0,.07);border-radius:12px;font-size:13px;color:#D6DBE6}
+details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14px;padding:6px 0;list-style:none} details summary::before{content:'▸ ';color:var(--muted)} details[open] summary::before{content:'▾ '}
+.barra{height:8px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;margin-top:6px} .barra i{display:block;height:100%;background:var(--green)}
+/* ---- pantalla de bienvenida ---- */
+#login{max-width:460px;margin:0 auto;padding-top:12px}
+.hero{text-align:center;padding:26px 8px 18px}
+.hero .semaforo-hero{display:inline-flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,#2B313F,#12161F);border-radius:28px;padding:16px 14px;box-shadow:inset 0 2px 10px rgba(0,0,0,.7),0 30px 60px -20px rgba(0,0,0,.9);margin-bottom:22px}
+.hero .semaforo-hero i{display:block;width:54px;height:54px;border-radius:50%;box-shadow:inset 0 3px 6px rgba(0,0,0,.5)}
+.hero .semaforo-hero i:nth-child(1){background:radial-gradient(circle at 35% 30%,#FF9AA4,var(--red) 60%);box-shadow:0 0 30px rgba(255,77,94,.7);animation:ciclo 6s infinite}
+.hero .semaforo-hero i:nth-child(2){background:radial-gradient(circle at 35% 30%,#FFE58A,var(--yellow) 60%);box-shadow:0 0 30px rgba(255,195,0,.7);animation:ciclo 6s infinite -2s}
+.hero .semaforo-hero i:nth-child(3){background:radial-gradient(circle at 35% 30%,#9DFFC1,var(--green) 60%);box-shadow:0 0 30px rgba(34,224,107,.7);animation:ciclo 6s infinite -4s}
+@keyframes ciclo{0%,28%{opacity:1;filter:none}33%,95%{opacity:.18;filter:saturate(.3)}100%{opacity:1}}
+.hero h2{font:800 34px/1.05 var(--f-display);margin:0;letter-spacing:-.03em;text-transform:none;color:var(--text)} .hero h2 span{background:linear-gradient(90deg,var(--red),var(--yellow),var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);font-size:15.5px;margin:12px auto 0;max-width:34ch}
+.features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.features div{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:15px;padding:12px 10px;text-align:center;font-size:12px;color:var(--muted);line-height:1.3}
+.features b{display:block;font:800 15px var(--f-display);color:var(--text);margin-bottom:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="logo"><i></i><i></i><i></i></span>SEMÁFORO <span>P2P</span></h1>
+  <div class="who" id="who"></div>
+</header>
+
+<main>
+
+<!-- ============ LOGIN ============ -->
+<section id="login" class="activa">
+  <div class="hero">
+    <div class="semaforo-hero"><i></i><i></i><i></i></div>
+    <h2>¿Operar o esperar?<br><span>Una luz te lo dice.</span></h2>
+    <p>Semáforo P2P lee el mercado de Binance P2P, calcula tu margen real y te muestra en verde, ámbar o rojo si conviene mover tu capital ahora.</p>
+  </div>
+  <div class="features">
+    <div><b>0,5 %</b>spread mínimo para no perder</div>
+    <div><b>FIFO</b>ganancia real por día, semana y mes</div>
+    <div><b>ISLR</b>impuestos listos para el contador</div>
+  </div>
+  <div class="card">
+    <h2>Entra a tu cuenta</h2>
+    <label>Correo</label><input id="l_email" type="email" autocomplete="email" placeholder="tu@correo.com">
+    <label>Contraseña</label><input id="l_pass" type="password" autocomplete="current-password" placeholder="mínimo 6 caracteres">
+    <div class="fila" style="margin-top:14px">
+      <button onclick="entrar()" style="flex:1">Entrar</button>
+      <button class="sec" onclick="registrar()" style="flex:1">Crear cuenta</button>
+    </div>
+    <p class="muted peq" id="l_msg" style="margin:10px 0 0"></p>
+  </div>
+  <button class="sec" style="width:100%" onclick="modoInvitado()">Probar la calculadora sin cuenta</button>
+  <p class="muted peq centro" style="margin-top:14px">Sin Supabase configurado, edita las dos primeras líneas del bloque CONFIG en index.html.</p>
+</section>
+
+<!-- ============ MERCADO ============ -->
+<section id="mercado">
+  <div class="card">
+    <h2>¿Qué luz tiene el mercado?</h2>
+    <div class="semaforo" id="sem_box" data-estado="gris">
+      <div class="luces grande"><i></i><i></i><i></i></div>
+      <div><b id="sem_titulo">Esperando el mercado</b><p id="sem_texto">Pulsa "Actualizar" para leer Binance P2P o ingresa los precios a mano.</p></div>
+    </div>
+    <div class="leyenda"><span class="v"><i></i>Verde: conviene operar</span><span class="a"><i></i>Ámbar: margen fino</span><span class="r"><i></i>Rojo: no operar</span></div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="kpi"><small>Compro a</small><b id="m_compra">—</b></div>
+      <div class="kpi"><small>Vendo a</small><b id="m_venta">—</b></div>
+      <div class="kpi"><small>Spread bruto</small><b id="m_spread">—</b></div>
+    </div>
+    <div class="grid3" style="margin-top:8px">
+      <div class="kpi" id="k_neto"><small>Margen neto</small><b id="m_neto">—</b></div>
+      <div class="kpi"><small>Punto de equilibrio</small><b id="m_be">—</b></div>
+      <div class="kpi"><small>Ganancia / ciclo</small><b id="m_gan">—</b></div>
+    </div>
+    <div class="fila" style="margin-top:12px">
+      <select id="m_fiat" style="flex:1"><option value="VES">USDT / VES (Bs)</option><option value="USD">USDT / USD</option><option value="PAB">USDT / PAB (Panamá)</option></select>
+      <input id="m_pay" placeholder="Método (opcional): PagoMovil, Banesco, Zelle…" style="flex:2">
+    </div>
+    <div class="fila" style="margin-top:8px">
+      <button onclick="actualizarMercado()" style="flex:1">Actualizar desde Binance</button>
+      <button class="sec" onclick="usarManual()" style="flex:1">Usar precios de la calculadora</button>
+    </div>
+    <p class="muted peq" id="m_hora" style="margin:8px 0 0"></p>
+  </div>
+
+  <div class="card" id="card_libro" style="display:none">
+    <h2>Libro de anuncios</h2>
+    <div class="grid2">
+      <div><p class="peq muted" style="margin:0 0 4px">Comerciantes que <b>compran</b> USDT (tu competencia al comprar)</p><table id="t_compradores"></table></div>
+      <div><p class="peq muted" style="margin:0 0 4px">Comerciantes que <b>venden</b> USDT (tu competencia al vender)</p><table id="t_vendedores"></table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Historial del spread</h2>
+    <canvas id="c_spread"></canvas>
+    <p class="muted peq" style="margin:6px 0 0">Cada actualización guarda una foto del mercado. Con varios días de datos verás a qué horas el spread es mayor.</p>
+  </div>
+</section>
+
+<!-- ============ CALCULADORA ============ -->
+<section id="calc">
+  <div class="card">
+    <h2>Calculadora de ganancia</h2>
+    <div class="grid2">
+      <div><label>Capital que rotas (fiat)</label><input id="c_capital" type="number" inputmode="decimal" placeholder="Ej. 50000"></div>
+      <div><label>Moneda</label><select id="c_fiat"><option>VES</option><option>USD</option><option>PAB</option></select></div>
+      <div><label>Precio de COMPRA (fiat por USDT)</label><input id="c_pb" type="number" inputmode="decimal" step="any" placeholder="Ej. 170.50"></div>
+      <div><label>Precio de VENTA (fiat por USDT)</label><input id="c_ps" type="number" inputmode="decimal" step="any" placeholder="Ej. 172.80"></div>
+      <div><label>Ciclos por día (rotaciones del capital)</label><input id="c_ciclos" type="number" inputmode="decimal" step="0.5" value="2"></div>
+      <div><label>Días operativos por semana</label><input id="c_dias" type="number" inputmode="numeric" value="6" min="1" max="7"></div>
+    </div>
+    <details style="margin-top:10px"><summary>Comisiones y costos (se cargan desde Ajustes)</summary>
+      <div class="grid2">
+        <div><label>Comisión maker Binance %</label><input id="c_maker" type="number" step="0.01" value="0.25"></div>
+        <div><label>Comisión taker fija (USDT)</label><input id="c_taker" type="number" step="0.01" value="0.05"></div>
+        <div><label>Rol en la compra</label><select id="c_rol_c"><option value="MAKER">Maker (mi anuncio)</option><option value="TAKER">Taker (tomo anuncio ajeno)</option></select></div>
+        <div><label>Rol en la venta</label><select id="c_rol_v"><option value="MAKER">Maker (mi anuncio)</option><option value="TAKER">Taker (tomo anuncio ajeno)</option></select></div>
+        <div><label>Comisión bancaria % sobre fiat movido</label><input id="c_banco" type="number" step="0.01" value="0"></div>
+        <div><label>IGTF % (solo si aplica a tus pagos)</label><input id="c_igtf" type="number" step="0.1" value="0"></div>
+        <div><label>Reserva para ISLR % de la ganancia</label><input id="c_islr" type="number" step="1" value="15"></div>
+        <div><label>Devaluación diaria del fiat % (riesgo de tener Bs)</label><input id="c_deval" type="number" step="0.01" value="0.10"></div>
+      </div>
+    </details>
+    <button onclick="calcular()" style="width:100%;margin-top:12px">Calcular</button>
+  </div>
+
+  <div class="card" id="c_res" style="display:none">
+    <h2>Luz de este escenario</h2>
+    <div class="semaforo" id="c_box" data-estado="gris" style="margin-bottom:10px"><div class="luces"><i></i><i></i><i></i></div><div><b id="c_veredicto">—</b><p id="c_veredicto_txt"></p></div></div>
+    <div class="grid3">
+      <div class="kpi"><small>USDT que compras</small><b id="r_usdt">—</b></div>
+      <div class="kpi"><small>Comisiones (fiat)</small><b id="r_fees">—</b></div>
+      <div class="kpi"><small>Recibes al vender</small><b id="r_bruto">—</b></div>
+      <div class="kpi" id="k_rneta"><small>Ganancia neta / ciclo</small><b id="r_neta">—</b></div>
+      <div class="kpi"><small>Margen neto</small><b id="r_margen">—</b></div>
+      <div class="kpi"><small>Equilibrio (spread mín.)</small><b id="r_be">—</b></div>
+    </div>
+    <h2 style="margin-top:14px">Proyección</h2>
+    <div class="grid3">
+      <div class="kpi"><small>Diaria</small><b id="r_dia">—</b></div>
+      <div class="kpi"><small>Semanal</small><b id="r_sem">—</b></div>
+      <div class="kpi"><small>Mensual</small><b id="r_mes">—</b></div>
+      <div class="kpi"><small>Reserva ISLR / mes</small><b id="r_islr">—</b></div>
+      <div class="kpi"><small>Neto tras reserva / mes</small><b id="r_mes_neto">—</b></div>
+      <div class="kpi"><small>Rentabilidad mensual s/ capital</small><b id="r_roi">—</b></div>
+    </div>
+    <h2 style="margin-top:14px">Modelos de ganancia (mismo capital)</h2>
+    <table id="t_modelos"></table>
+    <p class="muted peq" style="margin:8px 0 0">Costo de tener el capital parado en fiat: <span id="r_deval"></span>. Por eso la velocidad de rotación pesa tanto como el spread.</p>
+    <button class="sec" style="width:100%;margin-top:10px" onclick="calcAlMercado()">Encender el semáforo con estos precios</button>
+  </div>
+</section>
+
+<!-- ============ OPERACIONES ============ -->
+<section id="ops">
+  <div class="card">
+    <h2>Registrar operación</h2>
+    <div class="segment"><button class="activa" data-tipo="COMPRA" onclick="setTipo(this)">Compré USDT</button><button data-tipo="VENTA" onclick="setTipo(this)">Vendí USDT</button></div>
+    <div class="grid2">
+      <div><label>Monto USDT</label><input id="o_usdt" type="number" inputmode="decimal" step="any"></div>
+      <div><label>Precio (fiat por USDT)</label><input id="o_precio" type="number" inputmode="decimal" step="any"></div>
+      <div><label>País</label><select id="o_pais"><option value="VE">Venezuela</option><option value="PA">Panamá</option><option value="OTRO">Otro</option></select></div>
+      <div><label>Moneda</label><select id="o_fiat"><option>VES</option><option>USD</option><option>PAB</option></select></div>
+      <div><label>Rol</label><select id="o_rol"><option>MAKER</option><option>TAKER</option></select></div>
+      <div><label>Fecha y hora</label><input id="o_fecha" type="datetime-local"></div>
+      <div><label>Comisión Binance (USDT) <span class="muted">auto</span></label><input id="o_fee_usdt" type="number" step="any" placeholder="se calcula"></div>
+      <div><label>Comisión banco / IGTF (fiat)</label><input id="o_fee_fiat" type="number" step="any" value="0"></div>
+      <div><label>Tasa BCV del día (Bs/USD) <span class="muted">para impuestos</span></label><input id="o_bcv" type="number" step="any" placeholder="opcional"></div>
+      <div><label>Método de pago</label><input id="o_metodo" placeholder="Pago Móvil, Zelle…"></div>
+    </div>
+    <label>Nota / contraparte</label><input id="o_nota">
+    <button onclick="guardarOp()" style="width:100%;margin-top:12px">Guardar</button>
+  </div>
+  <div class="card">
+    <h2>Posición actual</h2>
+    <div class="grid3" id="posicion"></div>
+  </div>
+  <div class="card">
+    <h2>Últimas operaciones</h2>
+    <div style="overflow-x:auto"><table id="t_ops"></table></div>
+  </div>
+</section>
+
+<!-- ============ MÉTRICAS ============ -->
+<section id="metricas">
+  <div class="card">
+    <div class="segment" style="margin-bottom:12px"><button class="activa" onclick="verPeriodo('dia',this)">Diaria</button><button onclick="verPeriodo('semana',this)">Semanal</button><button onclick="verPeriodo('mes',this)">Mensual</button></div>
+    <div class="grid3" id="met_kpis"></div>
+    <canvas id="c_metricas" style="margin-top:12px"></canvas>
+    <div style="overflow-x:auto;margin-top:10px"><table id="t_metricas"></table></div>
+    <p class="muted peq">La ganancia se calcula emparejando cada venta con las compras más antiguas aún no vendidas (método FIFO), restando comisiones. Es la misma base que usa la pestaña de impuestos.</p>
+  </div>
+</section>
+
+<!-- ============ IMPUESTOS ============ -->
+<section id="impuestos">
+  <div class="card">
+    <h2>Resumen fiscal</h2>
+    <div class="fila"><label style="margin:0">Año</label><select id="i_anio" onchange="renderImpuestos()"></select>
+      <label style="margin:0 0 0 8px">Tasa BCV promedio del año (Bs/USD)</label><input id="i_bcv" type="number" step="any" placeholder="para convertir USD→Bs" style="max-width:160px" onchange="renderImpuestos()">
+    </div>
+    <div class="grid3" style="margin-top:10px" id="i_kpis"></div>
+    <div style="overflow-x:auto;margin-top:10px"><table id="t_fiscal"></table></div>
+  </div>
+  <div class="card">
+    <h2>Estimación ISLR Venezuela (persona natural)</h2>
+    <div class="grid2">
+      <div><label>Valor de la Unidad Tributaria (Bs)</label><input id="i_ut" type="number" step="any" onchange="renderImpuestos()"></div>
+      <div><label>Desgravamen único (UT)</label><input id="i_desg" type="number" value="774" onchange="renderImpuestos()"></div>
+    </div>
+    <div class="grid3" style="margin-top:10px" id="i_islr"></div>
+    <table id="t_tarifa" style="margin-top:10px"></table>
+    <p class="muted peq" style="margin-top:8px">Cálculo orientativo con la Tarifa N.º 1 de la Ley de ISLR sobre la ganancia neta de tus operaciones (ingresos − costo − comisiones), convertida a bolívares. Si tienes otros ingresos (sueldo, negocio), se suman al enriquecimiento global. Verifica el valor vigente de la UT y confirma con un contador.</p>
+  </div>
+  <div class="card">
+    <h2>Guía rápida</h2>
+    <details open><summary>Venezuela (residente fiscal)</summary>
+      <ul class="peq" style="padding-left:18px;color:#D6DBE6">
+        <li>Como residente (más de 183 días) declaras <b>renta mundial</b>: entran también las ganancias obtenidas operando en Panamá.</li>
+        <li>Se grava la <b>ganancia</b> (venta − costo de adquisición − comisiones), no el volumen movido. Cada operación se expresa en Bs; para USD usa la tasa BCV del día.</li>
+        <li>Declaración anual del ISLR (formulario DPN-25) hasta el <b>31 de marzo</b> del año siguiente, en la sección "otros ingresos" / enriquecimiento global. Mantén el respaldo: historial de Binance, capturas de pagos, este registro.</li>
+        <li>Lleva el registro contable de criptoactivos según la norma BA VEN-NIF 12 (los USDT se tratan como inventario).</li>
+        <li>IGTF (3 %) puede aplicar a pagos en moneda extranjera o criptoactivos; confirma con tu contador si tus cobros lo activan.</li>
+        <li>Declarar es tu mejor defensa ante bloqueos bancarios por "actividad sospechosa": documenta el origen de fondos.</li>
+      </ul></details>
+    <details><summary>Panamá</summary>
+      <ul class="peq" style="padding-left:18px;color:#D6DBE6">
+        <li>Sistema <b>territorial</b>: solo se grava renta de fuente panameña. Las ganancias de trading en un exchange extranjero suelen considerarse fuente extranjera, pero si cobras/pagas con cuentas y clientes en Panamá la fuente puede discutirse.</li>
+        <li>La Ley 526 de 2026 añadió requisitos de sustancia para rentas pasivas extranjeras de <b>entidades</b>; personas naturales sin cambios, reglamento pendiente.</li>
+        <li>Separa en esta app las operaciones con país = Panamá para tener el detalle si te lo piden.</li>
+      </ul></details>
+    <div class="fila" style="margin-top:10px">
+      <button class="sec" style="flex:1" onclick="exportarCSV()">Exportar operaciones (.txt CSV)</button>
+      <button class="sec" style="flex:1" onclick="copiarResumenFiscal()">Copiar resumen fiscal</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AJUSTES ============ -->
+<section id="ajustes">
+  <div class="card">
+    <h2>Parámetros</h2>
+    <div class="grid2">
+      <div><label>Nombre</label><input id="a_nombre"></div>
+      <div><label>Capital que rotas (fiat)</label><input id="a_capital" type="number" step="any"></div>
+      <div><label>Ciclos por día</label><input id="a_ciclos" type="number" step="0.5"></div>
+      <div><label>Comisión maker %</label><input id="a_maker" type="number" step="0.01"></div>
+      <div><label>Comisión taker fija (USDT)</label><input id="a_taker" type="number" step="0.01"></div>
+      <div><label>Comisión banco %</label><input id="a_banco" type="number" step="0.01"></div>
+      <div><label>IGTF %</label><input id="a_igtf" type="number" step="0.1"></div>
+      <div><label>Reserva ISLR %</label><input id="a_islr" type="number" step="1"></div>
+      <div><label>Luz verde si margen neto ≥ %</label><input id="a_verde" type="number" step="0.05"></div>
+      <div><label>Luz ámbar si margen neto ≥ %</label><input id="a_amarillo" type="number" step="0.05"></div>
+      <div><label>Valor UT (Bs)</label><input id="a_ut" type="number" step="any"></div>
+    </div>
+    <button onclick="guardarAjustes()" style="width:100%;margin-top:12px">Guardar ajustes</button>
+  </div>
+  <div class="card">
+    <h2>Cuenta</h2>
+    <p class="peq muted" id="a_info"></p>
+    <div class="fila"><button class="sec" onclick="recalcularTodo()" style="flex:1">Recalcular ganancias (FIFO)</button><button class="peligro" onclick="salir()" style="flex:1">Cerrar sesión</button></div>
+  </div>
+  <div class="card"><h2>Instalar en el teléfono</h2><p class="peq muted">Android/Chrome: menú ⋮ → "Instalar app". iPhone/Safari: Compartir → "Añadir a pantalla de inicio".</p><button class="sec" id="btn_instalar" style="display:none;width:100%" onclick="instalar()">Instalar ahora</button></div>
+</section>
+
+</main>
+
+<nav id="nav" style="display:none">
+  <button data-sec="mercado" class="activa"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>Mercado</button>
+  <button data-sec="calc"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M16 15v3"/></svg>Calcular</button>
+  <button data-sec="ops"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Operar</button>
+  <button data-sec="metricas"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Métricas</button>
+  <button data-sec="impuestos"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg>Impuestos</button>
+  <button data-sec="ajustes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* =====================================================================
+   CONFIG — pega aquí los datos de tu proyecto Supabase
+   (Project Settings → API → Project URL y anon public key)
+   ===================================================================== */
+const CONFIG = {
+  SUPABASE_URL: "https://igrmvfzpwjeosugeqnoj.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlncm12Znpwd2plb3N1Z2Vxbm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNTkxNTksImV4cCI6MjEwNDgzNTE1OX0.9NXlHsOqTV7PH4qfReQU3KDQS3iD159zObOynw_umwo",
+  // La Edge Function se despliega con: supabase functions deploy p2p-precios --no-verify-jwt
+  get FUNCION_PRECIOS(){ return this.SUPABASE_URL + "/functions/v1/p2p-precios"; }
+};
+
+/* ===================== ESTADO ===================== */
+let sb = null, usuario = null, invitado = false;
+let perfil = { fee_maker_pct:0.25, fee_taker_usdt:0.05, fee_banco_pct:0, igtf_pct:3, reserva_islr_pct:15, margen_verde_pct:0.8, margen_amarillo_pct:0.3, capital_bs:0, ciclos_dia:2, valor_ut_bs:9, nombre:'' };
+let ops = [], ganancias = [], snapshots = [], mercado = null, tipoOp = 'COMPRA', periodo = 'dia';
+let ultimoCalc = null, deferredPrompt = null;
+
+const $ = id => document.getElementById(id);
+const fmt = (n, d=2) => (n===null||n===undefined||isNaN(n)) ? '—' : Number(n).toLocaleString('es-VE',{minimumFractionDigits:d, maximumFractionDigits:d});
+const pct = n => (n===null||isNaN(n)) ? '—' : (n>=0?'+':'') + fmt(n,2) + ' %';
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('ver'); setTimeout(()=>t.classList.remove('ver'),2600); }
+
+/* =====================================================================
+   MOTOR DE CÁLCULO — un ciclo = comprar USDT con fiat y venderlo por fiat
+   ===================================================================== */
+function calcularCiclo(p){
+  // p: {capital, pb, ps, maker, taker, rolC, rolV, banco, igtf, islr}
+  const usdtBruto = p.capital / p.pb;
+  const feeCompraUsdt = p.rolC === 'MAKER' ? usdtBruto * p.maker/100 : p.taker;
+  const usdtNeto = usdtBruto - feeCompraUsdt;                       // lo que realmente queda en tu billetera
+  const feeVentaUsdt = p.rolV === 'MAKER' ? usdtNeto * p.maker/100 : p.taker;
+  const usdtEntregado = usdtNeto - feeVentaUsdt;                    // lo que cobra el comprador (tú pagas la comisión)
+  const fiatBruto = usdtEntregado * p.ps;                           // lo que recibes al vender
+  const feeBanco = (p.capital + fiatBruto) * p.banco/100;           // mover Bs de ida y vuelta
+  const feeIgtf = fiatBruto * p.igtf/100;
+  const feesFiat = (feeCompraUsdt + feeVentaUsdt) * p.ps + feeBanco + feeIgtf; // todas las comisiones expresadas en fiat
+  const neta = fiatBruto - p.capital - feeBanco - feeIgtf;
+  const margen = neta / p.capital * 100;
+  const spread = (p.ps/p.pb - 1) * 100;
+  // punto de equilibrio: spread mínimo para ganancia 0 (aprox. con ambas comisiones)
+  const fM = (p.rolC==='MAKER'?p.maker/100:0) + (p.rolV==='MAKER'?p.maker/100:0);
+  const fT = ((p.rolC==='TAKER'?p.taker:0) + (p.rolV==='TAKER'?p.taker:0)) / usdtBruto; // taker fijo como % del lote
+  const be = ((1 + p.banco/100) / ((1 - fM - fT) * (1 - p.igtf/100 - p.banco/100)) - 1) * 100;
+  return { usdtBruto, usdtNeto, feeCompraUsdt, feeVentaUsdt, fiatBruto, feeBanco, feeIgtf, feesFiat, neta, margen, spread, be, reservaIslr: Math.max(0,neta) * p.islr/100 };
+}
+function parametrosDesdePerfil(){
+  return { maker:+perfil.fee_maker_pct, taker:+perfil.fee_taker_usdt, banco:+perfil.fee_banco_pct, igtf:0, islr:+perfil.reserva_islr_pct, rolC:'MAKER', rolV:'MAKER' };
+}
+function semaforoPara(margen){
+  if (margen === null || isNaN(margen)) return {clase:'gris', titulo:'Esperando el mercado', texto:''};
+  if (margen >= +perfil.margen_verde_pct) return {clase:'verde', titulo:'Luz verde: opera', texto:`Margen neto ${pct(margen)} por ciclo, por encima de tu umbral de ${fmt(perfil.margen_verde_pct)} %.`};
+  if (margen >= +perfil.margen_amarillo_pct) return {clase:'amarillo', titulo:'Luz ámbar: con cuidado', texto:`Margen neto ${pct(margen)}: gana poco; solo vale si rotas rápido y sin fallos.`};
+  return {clase:'rojo', titulo:'Luz roja: no operes', texto:`Margen neto ${pct(margen)}: las comisiones y el riesgo se comen la ganancia.`};
+}
+
+/* ===================== CALCULADORA ===================== */
+function leerCalc(){
+  return {
+    capital:+$('c_capital').value, pb:+$('c_pb').value, ps:+$('c_ps').value,
+    maker:+$('c_maker').value, taker:+$('c_taker').value, rolC:$('c_rol_c').value, rolV:$('c_rol_v').value,
+    banco:+$('c_banco').value, igtf:+$('c_igtf').value, islr:+$('c_islr').value,
+    ciclos:+$('c_ciclos').value||1, dias:+$('c_dias').value||6, deval:+$('c_deval').value||0, fiat:$('c_fiat').value
+  };
+}
+function calcular(){
+  const p = leerCalc();
+  if (!(p.capital>0 && p.pb>0 && p.ps>0)) return toast('Ingresa capital, precio de compra y de venta');
+  const r = calcularCiclo(p); ultimoCalc = {p, r};
+  $('c_res').style.display='block';
+  const s = semaforoPara(r.margen); $('c_box').dataset.estado=s.clase; $('c_veredicto').textContent=s.titulo; $('c_veredicto_txt').textContent=s.texto; $('k_rneta').className='kpi '+s.clase;
+  $('r_usdt').textContent = fmt(r.usdtBruto,2)+' USDT';
+  $('r_fees').textContent = fmt(r.feesFiat);
+  $('r_bruto').textContent = fmt(r.fiatBruto);
+  const cls = r.neta>=0?'pos':'neg';
+  $('r_neta').textContent = fmt(r.neta); $('r_neta').className=cls;
+  $('r_margen').textContent = pct(r.margen); $('r_margen').className=cls;
+  $('r_be').textContent = fmt(r.be,2)+' %';
+  const dia = r.neta*p.ciclos, sem = dia*p.dias, mes = dia*p.dias*52/12;
+  $('r_dia').textContent=fmt(dia); $('r_sem').textContent=fmt(sem); $('r_mes').textContent=fmt(mes);
+  $('r_islr').textContent = fmt(Math.max(0,mes)*p.islr/100);
+  $('r_mes_neto').textContent = fmt(mes - Math.max(0,mes)*p.islr/100);
+  $('r_roi').textContent = pct(mes/p.capital*100);
+  $('r_deval').textContent = `${fmt(p.capital*p.deval/100)} ${p.fiat} por día parado (${fmt(p.deval)} % diario)`;
+  // modelos
+  const modelos = [
+    ['Conservador', 1, Math.max(r.spread*0.6, 0)],
+    ['Tu escenario', p.ciclos, r.spread],
+    ['Rotación alta', Math.max(p.ciclos*2,3), r.spread],
+    ['Spread amplio', p.ciclos, r.spread*1.5],
+    ['Mercado apretado', p.ciclos, r.spread*0.5],
+  ];
+  let h = '<tr><th>Modelo</th><th>Ciclos/día</th><th>Spread</th><th>Margen neto</th><th>Ganancia/mes</th></tr>';
+  for (const [nom, cic, sp] of modelos){
+    const rr = calcularCiclo({...p, ps: p.pb*(1+sp/100)});
+    const m = rr.neta*cic*p.dias*52/12;
+    h += `<tr><td>${nom}</td><td>${fmt(cic,1)}</td><td>${fmt(sp,2)} %</td><td class="${rr.margen>=0?'pos':'neg'}">${pct(rr.margen)}</td><td class="${m>=0?'pos':'neg'}">${fmt(m)}</td></tr>`;
+  }
+  $('t_modelos').innerHTML = h;
+  window.scrollTo({top:$('c_res').offsetTop-70, behavior:'smooth'});
+}
+function calcAlMercado(){ if(!ultimoCalc) return; mercado = {precio_compra:ultimoCalc.p.pb, precio_venta:ultimoCalc.p.ps, fiat:ultimoCalc.p.fiat, manual:true, hora:new Date().toISOString()}; renderMercado(); irA('mercado'); }
+function usarManual(){ $('c_pb').value && $('c_ps').value ? calcAlMercado() : (irA('calc'), toast('Ingresa los precios y calcula')); }
+
+/* ===================== MERCADO ===================== */
+async function actualizarMercado(){
+  const fiat = $('m_fiat').value, pay = $('m_pay').value.trim();
+  $('m_hora').textContent = 'Consultando Binance P2P…';
+  try{
+    const url = CONFIG.FUNCION_PRECIOS + `?fiat=${fiat}&rows=10` + (pay?`&pay=${encodeURIComponent(pay)}`:'');
+    const r = await fetch(url, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error||'sin datos');
+    mercado = j; renderMercado(); renderLibro(j);
+    if (sb && usuario) {
+      await sb.from('snapshots_p2p').insert({ usuario_id: usuario.id, fiat, precio_compra: j.precio_compra, precio_venta: j.precio_venta, detalle: { mediana_compra:j.mediana_compra, mediana_venta:j.mediana_venta, prof_c:j.profundidad_compra_usdt, prof_v:j.profundidad_venta_usdt } });
+      await cargarSnapshots();
+    }
+  }catch(e){
+    $('m_hora').textContent = 'No se pudo leer Binance ('+e.message+'). Verifica la Edge Function o usa precios manuales.';
+  }
+}
+function renderMercado(){
+  if(!mercado) return;
+  const cap = +perfil.capital_bs || 10000;
+  const r = calcularCiclo({ capital:cap, pb:mercado.precio_compra, ps:mercado.precio_venta, ...parametrosDesdePerfil() });
+  const s = semaforoPara(r.margen);
+  $('sem_box').dataset.estado=s.clase; document.body.dataset.luz=s.clase; $('sem_titulo').textContent=s.titulo; $('sem_texto').textContent=s.texto; $('k_neto').className='kpi '+s.clase; document.querySelector('meta[name=theme-color]').content = s.clase==='verde'?'#0F2A1A':s.clase==='rojo'?'#2A1212':'#0E1116';
+  $('m_compra').textContent=fmt(mercado.precio_compra,2); $('m_venta').textContent=fmt(mercado.precio_venta,2);
+  $('m_spread').textContent=pct(r.spread); $('m_neto').textContent=pct(r.margen); $('m_neto').className=r.margen>=0?'pos':'neg';
+  $('m_be').textContent=fmt(r.be,2)+' %'; $('m_gan').textContent=fmt(r.neta)+' '+(mercado.fiat||'');
+  $('m_gan').className=r.neta>=0?'pos':'neg';
+  $('m_hora').textContent = (mercado.manual?'Precios manuales · ':'Binance P2P · ') + new Date(mercado.hora).toLocaleString('es-VE') + ` · ganancia calculada con capital ${fmt(cap,0)} (cámbialo en Ajustes)`;
+}
+function renderLibro(j){
+  $('card_libro').style.display='block';
+  const fila = a => `<tr><td>${a.comerciante||'—'}<br><span class="muted peq">${a.ordenes_mes} órd · ${fmt(a.tasa_finalizacion*100,0)} %</span></td><td><b>${fmt(a.precio,2)}</b><br><span class="muted peq">${fmt(a.disponible,0)} USDT</span></td></tr>`;
+  $('t_compradores').innerHTML = '<tr><th>Comerciante</th><th>Precio</th></tr>' + (j.top_compradores||[]).map(fila).join('');
+  $('t_vendedores').innerHTML = '<tr><th>Comerciante</th><th>Precio</th></tr>' + (j.top_vendedores||[]).map(fila).join('');
+}
+async function cargarSnapshots(){
+  if(!sb||!usuario) return;
+  const { data } = await sb.from('snapshots_p2p').select('fecha,spread_pct,precio_compra,precio_venta').eq('usuario_id',usuario.id).order('fecha',{ascending:false}).limit(120);
+  snapshots = (data||[]).reverse(); dibujarLinea($('c_spread'), snapshots.map(s=>+s.spread_pct), snapshots.map(s=>new Date(s.fecha).toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit'})+' '+new Date(s.fecha).getHours()+'h'));
+}
+
+/* ===================== OPERACIONES ===================== */
+function setTipo(btn){ tipoOp = btn.dataset.tipo; document.querySelectorAll('#ops .segment button').forEach(b=>b.classList.toggle('activa',b===btn)); autoFee(); }
+function autoFee(){
+  const u=+$('o_usdt').value; if(!u) return;
+  $('o_fee_usdt').value = ($('o_rol').value==='MAKER' ? u*perfil.fee_maker_pct/100 : +perfil.fee_taker_usdt).toFixed(4);
+}
+async function guardarOp(){
+  if (!sb||!usuario) return toast('Inicia sesión para guardar operaciones');
+  const op = { usuario_id:usuario.id, tipo:tipoOp, pais:$('o_pais').value, fiat:$('o_fiat').value, monto_usdt:+$('o_usdt').value, precio:+$('o_precio').value,
+    rol:$('o_rol').value, fee_usdt:+$('o_fee_usdt').value||0, fee_fiat:+$('o_fee_fiat').value||0, tasa_bcv:+$('o_bcv').value||null,
+    metodo_pago:$('o_metodo').value||null, nota:$('o_nota').value||null, fecha: $('o_fecha').value ? new Date($('o_fecha').value).toISOString() : new Date().toISOString() };
+  if (!(op.monto_usdt>0 && op.precio>0)) return toast('Monto y precio son obligatorios');
+  const { error } = await sb.from('operaciones').insert(op);
+  if (error) return toast('Error: '+error.message);
+  toast('Operación guardada'); ['o_usdt','o_precio','o_fee_usdt','o_nota'].forEach(i=>$(i).value=''); $('o_fee_fiat').value=0;
+  await cargarOps(); await recalcularTodo(false);
+}
+async function borrarOp(id){
+  if (!confirm('¿Eliminar esta operación?')) return;
+  await sb.from('operaciones').delete().eq('id',id); await cargarOps(); await recalcularTodo(false);
+}
+async function cargarOps(){
+  if(!sb||!usuario) return;
+  const { data } = await sb.from('operaciones').select('*').eq('usuario_id',usuario.id).order('fecha',{ascending:true});
+  ops = data||[]; renderOps(); renderPosicion();
+}
+function renderOps(){
+  const ult = [...ops].reverse().slice(0,40);
+  let h='<tr><th>Fecha</th><th>Tipo</th><th>USDT</th><th>Precio</th><th>Total</th><th></th></tr>';
+  for(const o of ult){
+    h+=`<tr><td>${new Date(o.fecha).toLocaleString('es-VE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}<br><span class="muted peq">${o.pais} · ${o.fiat}</span></td><td><span class="tag ${o.tipo==='COMPRA'?'c':'v'}">${o.tipo}</span></td><td>${fmt(o.monto_usdt,2)}</td><td>${fmt(o.precio,2)}</td><td>${fmt(o.monto_fiat)}</td><td><button class="chico peligro" onclick="borrarOp('${o.id}')">✕</button></td></tr>`;
+  }
+  $('t_ops').innerHTML = ult.length? h : '<tr><td class="muted">Aún no hay operaciones.</td></tr>';
+}
+function renderPosicion(){
+  const lotes = lotesAbiertos();
+  const porFiat = {};
+  for (const l of lotes){ const k=l.fiat; porFiat[k] = porFiat[k]||{usdt:0,costo:0}; porFiat[k].usdt+=l.usdt; porFiat[k].costo+=l.costo; }
+  let h='';
+  for (const [f,v] of Object.entries(porFiat)) h+=`<div class="kpi"><small>USDT en mano (${f})</small><b>${fmt(v.usdt,2)}</b></div><div class="kpi"><small>Costo promedio</small><b>${v.usdt?fmt(v.costo/v.usdt,2):'—'}</b></div><div class="kpi"><small>Invertido</small><b>${fmt(v.costo)}</b></div>`;
+  $('posicion').innerHTML = h || '<div class="kpi"><small>Posición</small><b>0 USDT</b></div>';
+}
+
+/* ===================== FIFO ===================== */
+function lotesAbiertos(){ return fifo().lotes; }
+function fifo(){
+  // lotes por moneda+país; cada VENTA consume las compras más antiguas
+  const colas = {}, resultado = [], lotes = [];
+  for (const o of ops){
+    const k = o.fiat+'|'+o.pais; colas[k] = colas[k]||[];
+    if (o.tipo==='COMPRA'){
+      const usdt = +o.monto_usdt - +o.fee_usdt;               // USDT que realmente entran
+      colas[k].push({ usdt, costo: +o.monto_fiat + +o.fee_fiat, costoUnit: (+o.monto_fiat + +o.fee_fiat)/usdt, fiat:o.fiat, pais:o.pais, tasa_bcv:o.tasa_bcv });
+    } else {
+      let porVender = +o.monto_usdt, costo = 0;
+      while (porVender > 1e-9 && colas[k].length){
+        const l = colas[k][0]; const q = Math.min(l.usdt, porVender);
+        costo += q * l.costoUnit; l.usdt -= q; porVender -= q; if (l.usdt <= 1e-9) colas[k].shift();
+      }
+      if (porVender > 1e-9) costo += porVender * (+o.precio); // sin compras registradas: costo = precio de venta (ganancia 0)
+      const ingreso = (+o.monto_usdt - +o.fee_usdt) * +o.precio - +o.fee_fiat;
+      const gan = ingreso - costo;
+      const bcv = o.tasa_bcv ? +o.tasa_bcv : null;
+      resultado.push({ usuario_id:usuario?.id, venta_id:o.id, fecha:o.fecha, pais:o.pais, fiat:o.fiat, monto_usdt:+o.monto_usdt, costo_fiat:+costo.toFixed(2), ingreso_fiat:+ingreso.toFixed(2),
+        ganancia_bs_bcv: o.fiat==='VES' ? +gan.toFixed(2) : (bcv ? +(gan*bcv).toFixed(2) : null) });
+    }
+  }
+  for (const k in colas) lotes.push(...colas[k]);
+  return { resultado, lotes };
+}
+async function recalcularTodo(avisar=true){
+  if(!sb||!usuario) return;
+  const { resultado } = fifo();
+  await sb.from('ganancias_realizadas').delete().eq('usuario_id',usuario.id);
+  if (resultado.length){ const { error } = await sb.from('ganancias_realizadas').insert(resultado); if(error) return toast('Error FIFO: '+error.message); }
+  await cargarGanancias(); if (avisar) toast('Ganancias recalculadas');
+}
+async function cargarGanancias(){
+  if(!sb||!usuario) return;
+  const { data } = await sb.from('ganancias_realizadas').select('*').eq('usuario_id',usuario.id).order('fecha',{ascending:true});
+  ganancias = data||[]; renderMetricas(); llenarAnios(); renderImpuestos();
+}
+
+/* ===================== MÉTRICAS ===================== */
+function clave(fecha, per){
+  const d = new Date(fecha);
+  if (per==='dia') return d.toISOString().slice(0,10);
+  if (per==='mes') return d.toISOString().slice(0,7);
+  const t = new Date(d); const day = (t.getDay()+6)%7; t.setDate(t.getDate()-day); return t.toISOString().slice(0,10); // lunes
+}
+function verPeriodo(p, btn){ periodo=p; document.querySelectorAll('#metricas .segment button').forEach(b=>b.classList.toggle('activa',b===btn)); renderMetricas(); }
+function renderMetricas(){
+  const g = {};
+  for (const x of ganancias){ const k = clave(x.fecha, periodo); g[k]=g[k]||{ventas:0,usdt:0,ing:0,costo:0,gan:0}; g[k].ventas++; g[k].usdt+=+x.monto_usdt; g[k].ing+=+x.ingreso_fiat; g[k].costo+=+x.costo_fiat; g[k].gan+=+x.ganancia_fiat; }
+  const claves = Object.keys(g).sort(); const n = periodo==='dia'?30:periodo==='semana'?12:12; const vis = claves.slice(-n);
+  const tot = vis.reduce((s,k)=>s+g[k].gan,0), costo = vis.reduce((s,k)=>s+g[k].costo,0);
+  const hoy = clave(new Date(), periodo); const actual = g[hoy]?.gan||0;
+  const prom = vis.length? tot/vis.length : 0;
+  $('met_kpis').innerHTML = `<div class="kpi"><small>${periodo==='dia'?'Hoy':periodo==='semana'?'Esta semana':'Este mes'}</small><b class="${actual>=0?'pos':'neg'}">${fmt(actual)}</b></div><div class="kpi"><small>Promedio por ${periodo}</small><b>${fmt(prom)}</b></div><div class="kpi"><small>Margen s/ costo</small><b>${costo?pct(tot/costo*100):'—'}</b></div>`;
+  dibujarBarras($('c_metricas'), vis.map(k=>g[k].gan), vis.map(k=>periodo==='mes'?k.slice(5):k.slice(5).replace('-','/')));
+  let h=`<tr><th>${periodo==='dia'?'Día':periodo==='semana'?'Semana del':'Mes'}</th><th>Ventas</th><th>USDT</th><th>Ganancia</th><th>Margen</th></tr>`;
+  for (const k of [...vis].reverse()) h+=`<tr><td>${k}</td><td>${g[k].ventas}</td><td>${fmt(g[k].usdt,0)}</td><td class="${g[k].gan>=0?'pos':'neg'}">${fmt(g[k].gan)}</td><td>${g[k].costo?pct(g[k].gan/g[k].costo*100):'—'}</td></tr>`;
+  $('t_metricas').innerHTML = vis.length? h : '<tr><td class="muted">Registra compras y ventas para ver métricas.</td></tr>';
+}
+
+/* ===================== IMPUESTOS ===================== */
+const TARIFA1 = [ // Tarifa N.º 1 ISLR Venezuela (UT): [hasta, %, sustraendo]
+  [1000,6,0],[1500,9,30],[2000,12,75],[2500,16,155],[3000,20,255],[4000,24,375],[6000,29,575],[Infinity,34,875]
+];
+function llenarAnios(){
+  const anios = [...new Set(ganancias.map(g=>new Date(g.fecha).getFullYear()))].sort().reverse(); const hoy=new Date().getFullYear(); if(!anios.includes(hoy)) anios.unshift(hoy);
+  const sel=$('i_anio'); const prev=sel.value; sel.innerHTML=anios.map(a=>`<option>${a}</option>`).join(''); if(anios.includes(+prev)) sel.value=prev;
+  if(!$('i_ut').value) $('i_ut').value = perfil.valor_ut_bs;
+}
+function renderImpuestos(){
+  const anio = +$('i_anio').value || new Date().getFullYear(); const bcvProm = +$('i_bcv').value || 0;
+  const del = ganancias.filter(g=>new Date(g.fecha).getFullYear()===anio);
+  const grupos = {};
+  for (const g of del){ const k=g.pais+'|'+g.fiat; grupos[k]=grupos[k]||{pais:g.pais,fiat:g.fiat,ventas:0,usdt:0,ing:0,costo:0,gan:0,bs:0,sinTasa:0}; const x=grupos[k];
+    x.ventas++; x.usdt+=+g.monto_usdt; x.ing+=+g.ingreso_fiat; x.costo+=+g.costo_fiat; x.gan+=+g.ganancia_fiat;
+    if (g.fiat==='VES') x.bs += +g.ganancia_fiat; else if (g.ganancia_bs_bcv!==null) x.bs += +g.ganancia_bs_bcv; else if (bcvProm) x.bs += +g.ganancia_fiat*bcvProm; else x.sinTasa++; }
+  let h='<tr><th>País</th><th>Moneda</th><th>Ventas</th><th>Ingreso</th><th>Costo</th><th>Ganancia</th><th>Ganancia en Bs</th></tr>', totalBs=0, sinTasa=0;
+  for (const x of Object.values(grupos)){ totalBs+=x.bs; sinTasa+=x.sinTasa; h+=`<tr><td>${x.pais}</td><td>${x.fiat}</td><td>${x.ventas}</td><td>${fmt(x.ing)}</td><td>${fmt(x.costo)}</td><td class="${x.gan>=0?'pos':'neg'}">${fmt(x.gan)}</td><td>${fmt(x.bs)}</td></tr>`; }
+  $('t_fiscal').innerHTML = del.length? h : '<tr><td class="muted">Sin ventas en este año.</td></tr>';
+  $('i_kpis').innerHTML = `<div class="kpi"><small>Ganancia neta ${anio} (Bs)</small><b class="${totalBs>=0?'pos':'neg'}">${fmt(totalBs)}</b></div><div class="kpi"><small>Ventas</small><b>${del.length}</b></div><div class="kpi"><small>Sin tasa BCV</small><b class="${sinTasa?'neg':''}">${sinTasa}</b></div>`;
+  // ISLR
+  const ut = +$('i_ut').value||0, desg = +$('i_desg').value||0;
+  if (!ut) return;
+  const enUT = Math.max(0,totalBs)/ut, base = Math.max(0, enUT - desg);
+  let tramo = TARIFA1.find(t=>base<=t[0]); const impUT = base>0 ? base*tramo[1]/100 - tramo[2] : 0; const impBs = Math.max(0,impUT)*ut;
+  $('i_islr').innerHTML = `<div class="kpi"><small>Ganancia en UT</small><b>${fmt(enUT,1)}</b></div><div class="kpi"><small>Base tras desgravamen</small><b>${fmt(base,1)} UT</b></div><div class="kpi"><small>ISLR estimado</small><b>${fmt(impBs)} Bs</b></div><div class="kpi"><small>Tramo</small><b>${tramo[1]} %</b></div><div class="kpi"><small>Tasa efectiva</small><b>${totalBs>0?fmt(impBs/totalBs*100,2)+' %':'—'}</b></div><div class="kpi"><small>Reserva sugerida</small><b>${fmt(perfil.reserva_islr_pct,0)} %</b></div>`;
+  $('t_tarifa').innerHTML = '<tr><th>Hasta (UT)</th><th>%</th><th>Sustraendo (UT)</th></tr>' + TARIFA1.map(t=>`<tr ${t===tramo?'style="color:var(--gold)"':''}><td>${t[0]===Infinity?'más de 6000':t[0]}</td><td>${t[1]}</td><td>${t[2]}</td></tr>`).join('');
+}
+function exportarCSV(){
+  const cab = 'fecha,tipo,pais,fiat,monto_usdt,precio,monto_fiat,rol,fee_usdt,fee_fiat,tasa_bcv,metodo_pago,nota';
+  const filas = ops.map(o=>[o.fecha,o.tipo,o.pais,o.fiat,o.monto_usdt,o.precio,o.monto_fiat,o.rol,o.fee_usdt,o.fee_fiat,o.tasa_bcv??'',(o.metodo_pago||'').replace(/,/g,' '),(o.nota||'').replace(/,/g,' ')].join(','));
+  const blob = new Blob([cab+'\n'+filas.join('\n')],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`operaciones_p2p_${new Date().toISOString().slice(0,10)}.txt`; a.click();
+}
+function copiarResumenFiscal(){
+  const txt = $('i_kpis').innerText + '\n' + $('t_fiscal').innerText + '\n' + $('i_islr').innerText;
+  navigator.clipboard.writeText(txt).then(()=>toast('Resumen copiado'));
+}
+
+/* ===================== GRÁFICOS (canvas) ===================== */
+function prepCanvas(c){ const dpr=window.devicePixelRatio||1; const w=c.clientWidth, h=c.clientHeight; c.width=w*dpr; c.height=h*dpr; const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h); return {ctx,w,h}; }
+function dibujarBarras(c, vals, labels){
+  const {ctx,w,h}=prepCanvas(c); if(!vals.length){ ctx.fillStyle='#8B96AB'; ctx.font='13px system-ui'; ctx.fillText('Sin datos todavía',12,h/2); return; }
+  const mx=Math.max(...vals.map(Math.abs),1), pad=24, bw=(w-pad*2)/vals.length, zero=h/2;
+  ctx.strokeStyle='#1F2A3D'; ctx.beginPath(); ctx.moveTo(pad,zero); ctx.lineTo(w-pad,zero); ctx.stroke();
+  vals.forEach((v,i)=>{ const bh=(v/mx)*(h/2-18); ctx.fillStyle=v>=0?'#22C55E':'#EF4444'; ctx.fillRect(pad+i*bw+bw*0.15, v>=0?zero-bh:zero, bw*0.7, Math.abs(bh)); });
+  ctx.fillStyle='#8B96AB'; ctx.font='10px system-ui'; ctx.textAlign='center';
+  const paso=Math.ceil(vals.length/8); labels.forEach((l,i)=>{ if(i%paso===0) ctx.fillText(l, pad+i*bw+bw/2, h-4); });
+}
+function dibujarLinea(c, vals, labels){
+  const {ctx,w,h}=prepCanvas(c); if(vals.length<2){ ctx.fillStyle='#8B96AB'; ctx.font='13px system-ui'; ctx.fillText('Actualiza el mercado varias veces para ver la curva',12,h/2); return; }
+  const mn=Math.min(...vals,0), mx=Math.max(...vals,0.5), pad=28; const x=i=>pad+i*(w-pad*2)/(vals.length-1), y=v=>h-18-((v-mn)/(mx-mn||1))*(h-36);
+  ctx.strokeStyle='#1F2A3D'; [mn,0,mx].forEach(v=>{ ctx.beginPath(); ctx.moveTo(pad,y(v)); ctx.lineTo(w-pad,y(v)); ctx.stroke(); ctx.fillStyle='#8B96AB'; ctx.font='10px system-ui'; ctx.textAlign='left'; ctx.fillText(v.toFixed(2)+'%',2,y(v)+3); });
+  ctx.strokeStyle='#F0B90B'; ctx.lineWidth=2; ctx.beginPath(); vals.forEach((v,i)=> i?ctx.lineTo(x(i),y(v)):ctx.moveTo(x(i),y(v))); ctx.stroke(); ctx.lineWidth=1;
+  ctx.fillStyle='#8B96AB'; ctx.textAlign='center'; const paso=Math.ceil(vals.length/6); labels.forEach((l,i)=>{ if(i%paso===0) ctx.fillText(l,x(i),h-4); });
+}
+
+/* ===================== AJUSTES / PERFIL ===================== */
+function volcarPerfilEnUI(){
+  $('a_nombre').value=perfil.nombre||''; $('a_capital').value=perfil.capital_bs; $('a_ciclos').value=perfil.ciclos_dia; $('a_maker').value=perfil.fee_maker_pct; $('a_taker').value=perfil.fee_taker_usdt;
+  $('a_banco').value=perfil.fee_banco_pct; $('a_igtf').value=perfil.igtf_pct; $('a_islr').value=perfil.reserva_islr_pct; $('a_verde').value=perfil.margen_verde_pct; $('a_amarillo').value=perfil.margen_amarillo_pct; $('a_ut').value=perfil.valor_ut_bs;
+  $('c_capital').value = perfil.capital_bs||''; $('c_ciclos').value=perfil.ciclos_dia; $('c_maker').value=perfil.fee_maker_pct; $('c_taker').value=perfil.fee_taker_usdt; $('c_banco').value=perfil.fee_banco_pct; $('c_islr').value=perfil.reserva_islr_pct;
+  $('i_ut').value = perfil.valor_ut_bs;
+}
+async function guardarAjustes(){
+  perfil = {...perfil, nombre:$('a_nombre').value, capital_bs:+$('a_capital').value||0, ciclos_dia:+$('a_ciclos').value||1, fee_maker_pct:+$('a_maker').value, fee_taker_usdt:+$('a_taker').value, fee_banco_pct:+$('a_banco').value, igtf_pct:+$('a_igtf').value, reserva_islr_pct:+$('a_islr').value, margen_verde_pct:+$('a_verde').value, margen_amarillo_pct:+$('a_amarillo').value, valor_ut_bs:+$('a_ut').value };
+  try{ localStorage.setItem('semaforo_perfil', JSON.stringify(perfil)); }catch(e){}
+  if (sb&&usuario){ const { error } = await sb.from('perfiles').upsert({ id:usuario.id, ...perfil }); if(error) return toast('Error: '+error.message); }
+  volcarPerfilEnUI(); renderMercado(); renderImpuestos(); toast('Ajustes guardados');
+}
+async function cargarPerfil(){
+  try{ const l=localStorage.getItem('semaforo_perfil'); if(l) perfil={...perfil,...JSON.parse(l)}; }catch(e){}
+  if (sb&&usuario){ const { data } = await sb.from('perfiles').select('*').eq('id',usuario.id).maybeSingle(); if (data) perfil={...perfil,...data}; }
+  volcarPerfilEnUI();
+}
+
+/* ===================== AUTH / NAVEGACIÓN ===================== */
+function irA(sec){ document.querySelectorAll('main section').forEach(s=>s.classList.toggle('activa',s.id===sec)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('activa',b.dataset.sec===sec)); window.scrollTo(0,0); if(sec==='mercado') cargarSnapshots(); if(sec==='metricas') renderMetricas(); }
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>irA(b.dataset.sec));
+function mostrarApp(){ $('nav').style.display='flex'; irA('mercado'); llenarAnios(); renderImpuestos(); renderMetricas(); $('who').textContent = usuario ? (perfil.nombre||usuario.email) : 'modo invitado'; $('a_info').textContent = usuario ? `Sesión: ${usuario.email}` : 'Sin cuenta: los datos no se guardan en la nube.'; }
+async function entrar(){ if(!sb) return $('l_msg').textContent='Configura Supabase en CONFIG.'; const { data, error } = await sb.auth.signInWithPassword({ email:$('l_email').value.trim(), password:$('l_pass').value }); if (error) return $('l_msg').textContent=error.message; usuario=data.user; await arrancar(); }
+async function registrar(){ if(!sb) return $('l_msg').textContent='Configura Supabase en CONFIG.'; const { data, error } = await sb.auth.signUp({ email:$('l_email').value.trim(), password:$('l_pass').value }); if (error) return $('l_msg').textContent=error.message; $('l_msg').textContent = data.session ? 'Cuenta creada.' : 'Cuenta creada: revisa tu correo para confirmarla y luego entra.'; if(data.session){ usuario=data.user; await arrancar(); } }
+async function salir(){ if(sb) await sb.auth.signOut(); location.reload(); }
+function modoInvitado(){ invitado=true; cargarPerfil().then(()=>{ mostrarApp(); irA('calc'); }); }
+async function arrancar(){ await cargarPerfil(); mostrarApp(); await cargarOps(); await cargarGanancias(); await cargarSnapshots(); }
+
+(async function init(){
+  $('o_fecha').value = new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  ['o_usdt','o_rol'].forEach(i=>$(i).addEventListener('input',autoFee));
+  if (CONFIG.SUPABASE_URL.includes('TU-PROYECTO')) { $('l_msg').textContent='Supabase sin configurar: usa la calculadora o edita CONFIG.'; }
+  else {
+    sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    const { data } = await sb.auth.getSession();
+    if (data.session){ usuario = data.session.user; await arrancar(); }
+  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; $('btn_instalar').style.display='block'; });
+})();
+function instalar(){ if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; $('btn_instalar').style.display='none'; } }
+</script>
+</body>
+</html>

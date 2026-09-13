@@ -1,0 +1,16 @@
+{
+  "name": "Semáforo P2P",
+  "short_name": "Semáforo",
+  "description": "Una luz te dice si conviene operar en Binance P2P; la app lleva la cuenta de lo que ganas",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1116",
+  "theme_color": "#0E1116",
+  "lang": "es",
+  "icons": [
+    { "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%230E1116'/%3E%3Crect x='166' y='56' width='180' height='400' rx='56' fill='%2323272F'/%3E%3Ccircle cx='256' cy='136' r='52' fill='%23FF4D4D'/%3E%3Ccircle cx='256' cy='256' r='52' fill='%23FFC300'/%3E%3Ccircle cx='256' cy='376' r='52' fill='%2322E06B'/%3E%3C/svg%3E", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230E1116'/%3E%3Crect x='166' y='56' width='180' height='400' rx='56' fill='%2323272F'/%3E%3Ccircle cx='256' cy='136' r='52' fill='%23FF4D4D'/%3E%3Ccircle cx='256' cy='256' r='52' fill='%23FFC300'/%3E%3Ccircle cx='256' cy='376' r='52' fill='%2322E06B'/%3E%3C/svg%3E", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
