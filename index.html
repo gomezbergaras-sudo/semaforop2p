@@ -141,9 +141,14 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     </div>
     <div class="leyenda"><span class="v"><i></i>Verde: conviene operar</span><span class="a"><i></i>Ámbar: margen fino</span><span class="r"><i></i>Rojo: no operar</span></div>
     <div class="grid3" style="margin-top:12px">
-      <div class="kpi"><small>Compro a</small><b id="m_compra">—</b></div>
-      <div class="kpi"><small>Vendo a</small><b id="m_venta">—</b></div>
-      <div class="kpi"><small>Spread bruto</small><b id="m_spread">—</b></div>
+      <div class="kpi"><small>Mejor comprador paga</small><b id="m_compra">—</b></div>
+      <div class="kpi"><small>Mejor vendedor cobra</small><b id="m_venta">—</b></div>
+      <div class="kpi"><small>Spread del mercado</small><b id="m_spread">—</b></div>
+    </div>
+    <div class="grid3" style="margin-top:8px">
+      <div class="kpi verde"><small>Pon tu compra a</small><b id="m_sug_c">—</b></div>
+      <div class="kpi verde"><small>Pon tu venta a</small><b id="m_sug_v">—</b></div>
+      <div class="kpi"><small>Spread de tu anuncio</small><b id="m_sug_s">—</b></div>
     </div>
     <div class="grid3" style="margin-top:8px">
       <div class="kpi" id="k_neto"><small>Margen neto</small><b id="m_neto">—</b></div>
@@ -154,12 +159,16 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
       <div><label>Mercado</label><select id="m_fiat" onchange="cargarMetodos()"><option value="VES">USDT / VES (Bs)</option><option value="USD">USDT / USD</option><option value="PAB">USDT / PAB (Panamá)</option></select></div>
       <div><label>Anunciantes</label><select id="m_tipo"><option value="todos">Todos (comerciantes y usuarios)</option><option value="comerciante">Solo comerciantes verificados</option><option value="usuario">Solo usuarios (no comerciantes)</option></select></div>
       <div><label>Método de pago</label><select id="m_pay"><option value="">Todos los métodos</option></select></div>
-      <div><label>Monto de la orden (fiat)</label><input id="m_monto" type="number" inputmode="decimal" placeholder="Ej. 5000 · vacío = cualquiera"></div>
+      <div><label>Monto de tu orden</label><div class="fila" style="flex-wrap:nowrap"><input id="m_monto" type="number" inputmode="decimal" placeholder="Ej. 500" style="flex:1"><select id="m_monto_en" style="width:96px;flex:none"><option value="usdt">USDT</option><option value="fiat">fiat</option></select></div></div>
+      <div><label>Tu anuncio</label><select id="m_modo" onchange="renderMercado()"><option value="superar">Superar el mejor precio por un paso</option><option value="igualar">Igualar el mejor precio</option></select></div>
+      <div><label>Paso de mejora</label><input id="m_paso" type="number" inputmode="decimal" step="0.01" value="0.01"></div>
     </div>
+    <label class="fila peq muted" style="margin-top:8px;gap:8px;align-items:center"><input type="checkbox" id="m_patro" style="width:18px;height:18px;margin:0"> Incluir anuncios patrocinados y de bloque (por defecto se omiten)</label>
     <div class="fila" style="margin-top:10px">
       <button onclick="actualizarMercado()" style="flex:1">Actualizar desde Binance</button>
       <button class="sec" onclick="usarManual()" style="flex:1">Usar precios de la calculadora</button>
     </div>
+    <button class="sec" style="width:100%;margin-top:8px" onclick="sugeridosACalc()">Llevar los precios sugeridos a la calculadora</button>
     <p class="muted peq" id="m_hora" style="margin:8px 0 0"></p>
   </div>
 
@@ -168,7 +177,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     <div class="segment" style="margin-bottom:10px"><button class="activa" onclick="verLado('compradores',this)">Quienes compran USDT</button><button onclick="verLado('vendedores',this)">Quienes venden USDT</button></div>
     <p class="peq muted" id="libro_txt" style="margin:0 0 6px"></p>
     <div style="overflow-x:auto"><table id="t_libro"></table></div>
-    <p class="muted peq" style="margin:8px 0 0"><span class="tag c" style="font-size:10px">✓</span> comerciante verificado · <span class="tag v" style="font-size:10px">U</span> usuario normal. Límites = monto mínimo y máximo que acepta cada anuncio.</p>
+    <p class="muted peq" style="margin:8px 0 0"><span class="tag c" style="font-size:10px">✓</span> comerciante verificado · <span class="tag v" style="font-size:10px">U</span> usuario normal · ★ patrocinado o de bloque (solo se ven si marcas la casilla). Límites = monto mínimo y máximo en fiat que acepta cada anuncio; si tu orden no cabe, el anuncio no cuenta para el semáforo.</p>
   </div>
 
   <div class="card">
@@ -458,6 +467,7 @@ function calcular(){
   $('t_modelos').innerHTML = h;
   window.scrollTo({top:$('c_res').offsetTop-70, behavior:'smooth'});
 }
+function sugeridosACalc(){ if(!mercado||!mercado.precio_compra) return toast('Primero actualiza el mercado'); const modo=$('m_modo').value; const pb=(mercado.sugerencia&&modo==='superar')?mercado.sugerencia.compra:mercado.precio_compra; const ps=(mercado.sugerencia&&modo==='superar')?mercado.sugerencia.venta:mercado.precio_venta; $('c_pb').value=pb; $('c_ps').value=ps; $('c_fiat').value=mercado.fiat||'VES'; irA('calc'); if(+$('c_capital').value>0) calcular(); }
 function calcAlMercado(){ if(!ultimoCalc) return; mercado = {precio_compra:ultimoCalc.p.pb, precio_venta:ultimoCalc.p.ps, fiat:ultimoCalc.p.fiat, manual:true, hora:new Date().toISOString()}; renderMercado(); irA('mercado'); }
 function usarManual(){ $('c_pb').value && $('c_ps').value ? calcAlMercado() : (irA('calc'), toast('Ingresa los precios y calcula')); }
 
@@ -481,10 +491,10 @@ function cargarMetodos(){
 let ladoLibro = 'compradores';
 function verLado(l, btn){ ladoLibro=l; document.querySelectorAll('#card_libro .segment button').forEach(b=>b.classList.toggle('activa',b===btn)); if(mercado&&!mercado.manual) renderLibro(mercado); }
 async function actualizarMercado(){
-  const fiat = $('m_fiat').value, pay = $('m_pay').value, monto = +$('m_monto').value||0, tipo = $('m_tipo').value;
+  const fiat = $('m_fiat').value, pay = $('m_pay').value, monto = +$('m_monto').value||0, tipo = $('m_tipo').value, montoEn = $('m_monto_en').value, paso = +$('m_paso').value||0.01;
   $('m_hora').textContent = 'Consultando Binance P2P…';
   try{
-    const q = new URLSearchParams({ fiat, rows:'20', tipo }); if (pay) q.set('pay', pay); if (monto) q.set('monto', String(monto));
+    const q = new URLSearchParams({ fiat, rows:'20', tipo, monto_en: montoEn, paso: String(paso), patrocinados: $('m_patro').checked?'1':'0' }); if (pay) q.set('pay', pay); if (monto) q.set('monto', String(monto));
     const r = await fetch(CONFIG.FUNCION_PRECIOS + '?' + q.toString(), { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error||'sin datos');
@@ -503,14 +513,18 @@ function renderMercado(){
   if(!mercado) return;
   if(!mercado.precio_compra || !mercado.precio_venta){ $('sem_box').dataset.estado='gris'; document.body.dataset.luz='gris'; $('sem_titulo').textContent='Sin anuncios con esos filtros'; $('sem_texto').textContent='Amplía el método de pago o cambia el monto de la orden.'; $('m_compra').textContent=$('m_venta').textContent=$('m_spread').textContent=$('m_neto').textContent=$('m_be').textContent=$('m_gan').textContent='—'; return; }
   const cap = +perfil.capital_bs || 10000;
-  const r = calcularCiclo({ capital:cap, pb:mercado.precio_compra, ps:mercado.precio_venta, ...parametrosDesdePerfil() });
+  const modo = $('m_modo').value;
+  const pb = (!mercado.manual && mercado.sugerencia && modo==='superar') ? mercado.sugerencia.compra : mercado.precio_compra;
+  const ps = (!mercado.manual && mercado.sugerencia && modo==='superar') ? mercado.sugerencia.venta  : mercado.precio_venta;
+  const r = calcularCiclo({ capital:cap, pb, ps, ...parametrosDesdePerfil() });
+  $('m_sug_c').textContent = fmt(pb, pb>=100?2:4); $('m_sug_v').textContent = fmt(ps, ps>=100?2:4); $('m_sug_s').textContent = pct((ps/pb-1)*100); $('m_sug_s').className = (ps>pb)?'pos':'neg';
   const s = semaforoPara(r.margen);
   $('sem_box').dataset.estado=s.clase; document.body.dataset.luz=s.clase; $('sem_titulo').textContent=s.titulo; $('sem_texto').textContent=s.texto; $('k_neto').className='kpi '+s.clase; document.querySelector('meta[name=theme-color]').content = s.clase==='verde'?'#0F2A1A':s.clase==='rojo'?'#2A1212':'#0E1116';
   $('m_compra').textContent=fmt(mercado.precio_compra,2); $('m_venta').textContent=fmt(mercado.precio_venta,2);
-  $('m_spread').textContent=pct(r.spread); $('m_neto').textContent=pct(r.margen); $('m_neto').className=r.margen>=0?'pos':'neg';
+  $('m_spread').textContent=pct((mercado.precio_venta/mercado.precio_compra-1)*100); $('m_neto').textContent=pct(r.margen); $('m_neto').className=r.margen>=0?'pos':'neg';
   $('m_be').textContent=fmt(r.be,2)+' %'; $('m_gan').textContent=fmt(r.neta)+' '+(mercado.fiat||'');
   $('m_gan').className=r.neta>=0?'pos':'neg';
-  $('m_hora').textContent = (mercado.manual?'Precios manuales · ':'Binance P2P · ') + new Date(mercado.hora).toLocaleString('es-VE') + ` · ganancia calculada con capital ${fmt(cap,0)} (cámbialo en Ajustes)`;
+  $('m_hora').textContent = (mercado.manual?'Precios manuales · ':'Binance P2P · ') + new Date(mercado.hora).toLocaleString('es-VE') + ` · ganancia calculada con tus precios sugeridos y capital ${fmt(cap,0)} (cámbialo en Ajustes)`;
 }
 function renderLibro(j){
   $('card_libro').style.display='block';
@@ -518,7 +532,7 @@ function renderLibro(j){
   const f = j.filtros||{}; const filtros = [f.tipo&&f.tipo!=='todos'?({comerciante:'solo comerciantes',usuario:'solo usuarios'})[f.tipo]:null, f.pay?.length?('método: '+f.pay.join(', ')):null, f.monto?('monto '+fmt(f.monto,0)+' '+j.fiat):null].filter(Boolean).join(' · ');
   $('libro_n').textContent = `· ${j.n_compradores||0} compran / ${j.n_vendedores||0} venden`;
   $('libro_txt').textContent = (ladoLibro==='compradores' ? 'Anuncios de quienes COMPRAN USDT (tu competencia cuando tú compras; el precio más alto manda).' : 'Anuncios de quienes VENDEN USDT (tu competencia cuando tú vendes; el precio más bajo manda).') + (filtros?' Filtros: '+filtros+'.':'');
-  const fila = a => `<tr><td><span class="tag ${a.tipo==='comerciante'?'c':'v'}" style="font-size:10px">${a.tipo==='comerciante'?'✓':'U'}</span> ${a.comerciante||'—'}<br><span class="muted peq">${a.ordenes_mes} órd · ${fmt(a.tasa_finalizacion*100,0)} % · ${(a.metodos||[]).slice(0,3).join(', ')}${(a.metodos||[]).length>3?' +'+((a.metodos.length)-3):''}</span></td><td><b>${fmt(a.precio,2)}</b><br><span class="muted peq">${fmt(a.disponible,0)} USDT</span></td><td><span class="peq">${fmt(a.minimo,0)}<br>${fmt(a.maximo,0)}</span></td></tr>`;
+  const fila = a => `<tr><td><span class="tag ${a.tipo==='comerciante'?'c':'v'}" style="font-size:10px">${a.tipo==='comerciante'?'✓':'U'}</span>${a.patrocinado?' <span class="tag" style="font-size:10px;background:rgba(255,77,94,.16);color:var(--red)">★ patroc.</span>':''} ${a.comerciante||'—'}<br><span class="muted peq">${a.ordenes_mes} órd · ${fmt(a.tasa_finalizacion*100,0)} % · ${(a.metodos||[]).slice(0,3).join(', ')}${(a.metodos||[]).length>3?' +'+((a.metodos.length)-3):''}</span></td><td><b>${fmt(a.precio,2)}</b><br><span class="muted peq">${fmt(a.disponible,0)} USDT</span></td><td><span class="peq">${fmt(a.minimo,0)}<br>${fmt(a.maximo,0)}</span></td></tr>`;
   $('t_libro').innerHTML = '<tr><th>Anunciante</th><th>Precio</th><th>Límites</th></tr>' + (lista.length ? lista.map(fila).join('') : '<tr><td colspan="3" class="muted">Ningún anuncio cumple los filtros.</td></tr>');
 }
 async function cargarSnapshots(){

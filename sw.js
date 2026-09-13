@@ -1,6 +1,6 @@
 // Service worker: deja la app disponible sin conexión (la calculadora funciona offline;
 // el mercado y los datos requieren internet).
-const CACHE = 'semaforo-p2p-v4';
+const CACHE = 'semaforo-p2p-v5';
 const ARCHIVOS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
