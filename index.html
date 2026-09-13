@@ -32,6 +32,8 @@ header{position:sticky;top:0;z-index:5;padding:calc(12px + env(safe-area-inset-t
 header h1{font:800 19px/1 var(--f-display);margin:0;letter-spacing:-.01em;display:flex;align-items:center;gap:10px} header h1 span{color:var(--muted);font-weight:600}
 header .who:empty{display:none} header .who{font-size:12px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);padding:5px 10px;border-radius:999px;max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .logo-img{width:30px;height:30px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.6)}
+.sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;background:var(--bg2);border:1px solid var(--line2);padding:5px 10px 5px 6px;border-radius:999px;font:700 11.5px var(--f-body);color:var(--muted)} .sw i{width:34px;height:20px;border-radius:999px;background:#3A3F4B;position:relative;transition:.2s;flex:none} .sw i::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s} .sw.on{color:var(--green);border-color:rgba(31,196,106,.5)} .sw.on i{background:var(--green)} .sw.on i::after{left:16px}
+.solo-com{display:none} body[data-com="1"] .solo-com{display:block} body[data-com="1"] .solo-nocom{display:none}
 .ayuda{font-size:12.5px;color:var(--muted);margin:-4px 0 10px;line-height:1.4} .ayuda b{color:#C9CCD3;font-weight:600}
 .pasos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px} .pasos div{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:14px;padding:10px;font-size:12px;color:var(--muted);line-height:1.35} .pasos b{display:block;font:800 13px var(--f-display);color:var(--text);margin-bottom:3px} .pasos i{display:inline-flex;width:20px;height:20px;border-radius:50%;align-items:center;justify-content:center;font:800 11px var(--f-display);color:#111;margin-right:6px;font-style:normal}
 .subnav{display:flex;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px} .subnav button{flex:1;background:none;color:var(--muted);padding:9px;font:700 13px var(--f-body);border-radius:11px;box-shadow:none} .subnav button.activa{background:var(--card-solid);color:var(--text);box-shadow:0 4px 12px -4px rgba(0,0,0,.6)}
@@ -108,7 +110,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
 
 <header>
   <h1><img class="logo-img" src="data:image/png;base64,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" alt="">Semáforo <span>P2P</span></h1>
-  <div class="who" id="who"></div>
+  <div class="fila" style="gap:8px"><span class="sw" id="sw_com" onclick="toggleComerciante()" title="Comerciante verificado en Binance"><i></i><span id="sw_com_txt">Comerciante: NO</span></span><div class="who" id="who"></div></div>
 </header>
 
 <main>
@@ -205,7 +207,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
   </div>
 
 
-  <div class="card" id="card_plan" style="display:none">
+  <div class="card solo-com" id="card_plan" style="display:none">
     <h2>Plan de anuncios</h2>
     <p class="ayuda"><b>Comprar chico, vender grande.</b> Elige los tamaños de orden donde hay menos competencia y arma tus dos anuncios.</p>
     <p class="peq muted" style="margin:0 0 8px">Por cada tamaño de orden solo compiten los anuncios que aceptan ese monto. La app busca el tramo donde puedes <b>comprar más barato</b> y el tramo donde puedes <b>vender más caro</b>, y arma los dos anuncios.</p>
@@ -226,7 +228,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     </div>
   </div>
 
-  <div class="card" id="card_pub" style="display:none">
+  <div class="card solo-com" id="card_pub" style="display:none">
     <h2>Publicar en Binance</h2>
     <div class="segment" style="margin-bottom:10px"><button class="activa" id="pub_b_c" onclick="setPubTipo('COMPRA')">Compro USDT</button><button id="pub_b_v" onclick="setPubTipo('VENTA')">Vendo USDT</button></div>
     <div class="grid2">
@@ -285,6 +287,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
 
 
 
+  <div class="aviso peq solo-nocom" style="margin-bottom:12px">Estás en modo <b>no comerciante</b>: la app calcula tomando anuncios de otros (0,05 USDT por orden). Cuando Binance te apruebe como comerciante, activa el interruptor de arriba y verás también el plan de anuncios y la publicación.</div>
   <div class="card" id="e_card_simple">
     <div class="cinta"></div>
     <h2>Plan simple · comprar chico, vender grande</h2>
@@ -320,7 +323,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     </div>
   </div>
 
-  <div class="card" id="e_card_mis">
+  <div class="card solo-com" id="e_card_mis">
     <div class="cinta"></div>
     <h2>Mis anuncios · precios de referencia</h2>
     <p class="ayuda">Tú publicas. La app te dice <b>quién vende más barato</b> (y con qué volumen mínimo) y <b>quién compra más caro</b>, para que fijes tu precio de compra y de venta, y te muestra lo que ganas según el volumen y las vueltas.</p>
@@ -608,6 +611,11 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     <button onclick="guardarAjustes()" style="width:100%;margin-top:12px">Guardar ajustes</button>
   </div>
   <div class="card">
+    <h2>Mi perfil en Binance</h2>
+    <p class="ayuda"><b>Comerciante</b>: publicas anuncios (pagas 0,25 % por anuncio). <b>No comerciante</b>: tomas los anuncios de otros (pagas 0,05 USDT por orden). La app calcula todo según lo que marques aquí.</p>
+    <span class="sw" id="sw_com2" onclick="toggleComerciante()"><i></i><span id="sw_com2_txt">Comerciante: NO</span></span>
+  </div>
+  <div class="card">
     <h2>Comisiones bancarias reales</h2>
     <p class="ayuda">El motor <b>no asume tarifas</b>: carga aquí lo que te cobra cada banco por método y por ruta. Sin una comisión cargada, la ruta no se puede evaluar.</p>
     <div class="grid3">
@@ -690,13 +698,28 @@ function calcularCiclo(p){
   return { usdtBruto, usdtNeto, feeCompraUsdt, feeVentaUsdt, fiatBruto, feeBanco, feeIgtf, feesFiat, neta, margen, spread, be, reservaIslr: Math.max(0,neta) * p.islr/100 };
 }
 function parametrosDesdePerfil(){
-  return { maker:+perfil.fee_maker_pct, taker:+perfil.fee_taker_usdt, banco:+perfil.fee_banco_pct, igtf:0, islr:+perfil.reserva_islr_pct, rolC:'MAKER', rolV:'MAKER' };
+  return { maker:+perfil.fee_maker_pct, taker:+perfil.fee_taker_usdt, banco:+perfil.fee_banco_pct, igtf:0, islr:+perfil.reserva_islr_pct, rolC:esComerciante?'MAKER':'TAKER', rolV:esComerciante?'MAKER':'TAKER' };
 }
 function semaforoPara(margen){
   if (margen === null || isNaN(margen)) return {clase:'gris', titulo:'Esperando el mercado', texto:''};
   if (margen >= +perfil.margen_verde_pct) return {clase:'verde', titulo:'Luz verde: opera', texto:`Margen neto ${pct(margen)} por ciclo, por encima de tu umbral de ${fmt(perfil.margen_verde_pct)} %.`};
   if (margen >= +perfil.margen_amarillo_pct) return {clase:'amarillo', titulo:'Luz ámbar: con cuidado', texto:`Margen neto ${pct(margen)}: gana poco; solo vale si rotas rápido y sin fallos.`};
   return {clase:'rojo', titulo:'Luz roja: no operes', texto:`Margen neto ${pct(margen)}: las comisiones y el riesgo se comen la ganancia.`};
+}
+
+/* ===================== COMERCIANTE SÍ / NO ===================== */
+let esComerciante = false;
+try { esComerciante = localStorage.getItem('semaforo_comerciante') === '1'; } catch(e){}
+function pintarComerciante(){
+  document.body.dataset.com = esComerciante ? '1' : '0';
+  for (const [a,b] of [['sw_com','sw_com_txt'],['sw_com2','sw_com2_txt']]){ const el=$(a); if(!el) continue; el.classList.toggle('on', esComerciante); $(b).textContent = 'Comerciante: ' + (esComerciante?'SÍ':'NO'); }
+  if ($('c_rol_c')) { $('c_rol_c').value = esComerciante?'MAKER':'TAKER'; $('c_rol_v').value = esComerciante?'MAKER':'TAKER'; }
+  if ($('m_modo')) $('m_modo').disabled = !esComerciante;
+}
+function toggleComerciante(){
+  esComerciante = !esComerciante; try{ localStorage.setItem('semaforo_comerciante', esComerciante?'1':'0'); }catch(e){}
+  pintarComerciante(); if (mercado) renderMercado(); if (mercado?.plan) renderPlan(mercado); if (referencias) renderMis(); toast(esComerciante ? 'Modo comerciante: publicas anuncios (maker 0,25 %)' : 'Modo no comerciante: tomas anuncios (taker 0,05 USDT)');
+  if (sb && usuario) sb.from('perfiles').update({ es_comerciante: esComerciante }).eq('id',usuario.id).then(()=>{});
 }
 
 /* ===================== COMISIONES BANCARIAS ===================== */
@@ -829,7 +852,7 @@ function cargarMetodos(){
 function togglePay(id){
   if (!id) paySel.clear(); else if (paySel.has(id)) paySel.delete(id); else paySel.add(id);
   try{ localStorage.setItem('semaforo_paysel_'+$('m_fiat').value, JSON.stringify([...paySel])); }catch(e){}
-  cargarMetodos();
+  cargarMetodos(); pintarComerciante();
 }
 let ladoLibro = 'compradores';
 function verLado(l, btn){ ladoLibro=l; document.querySelectorAll('#card_libro .segment button').forEach(b=>b.classList.toggle('activa',b===btn)); if(mercado&&!mercado.manual) renderLibro(mercado); }
@@ -855,10 +878,18 @@ async function actualizarMercado(){
 function renderMercado(){
   if(!mercado) return;
   if(!mercado.precio_compra || !mercado.precio_venta){ $('sem_box').dataset.estado='gris'; document.body.dataset.luz='gris'; $('sem_titulo').textContent='Sin anuncios con esos filtros'; $('sem_texto').textContent='Amplía el método de pago o cambia el monto de la orden.'; $('m_compra').textContent=$('m_venta').textContent=$('m_spread').textContent=$('m_neto').textContent=$('m_be').textContent=$('m_gan').textContent='—'; return; }
-  const cap = +perfil.capital_bs || 10000;
+  const cap = +perfil.capital_bs || Math.round(1000*mercado.precio_compra);   // sin capital configurado: 1.000 USDT de referencia
   const modo = $('m_modo').value;
-  const pb = (!mercado.manual && mercado.sugerencia && modo==='superar') ? mercado.sugerencia.compra : mercado.precio_compra;
-  const ps = (!mercado.manual && mercado.sugerencia && modo==='superar') ? mercado.sugerencia.venta  : mercado.precio_venta;
+  let pb, ps;
+  if (esComerciante || mercado.manual) {
+    pb = (!mercado.manual && mercado.sugerencia && modo==='superar') ? mercado.sugerencia.compra : mercado.precio_compra;
+    ps = (!mercado.manual && mercado.sugerencia && modo==='superar') ? mercado.sugerencia.venta  : mercado.precio_venta;
+  } else {
+    // No comerciante: tomas anuncios → compras al vendedor más barato y vendes al comprador más caro
+    pb = mercado.precio_venta; ps = mercado.precio_compra;
+  }
+  document.querySelector('#m_sug_c').previousElementSibling.textContent = esComerciante ? 'Pon tu compra a' : 'Compras tomando a';
+  document.querySelector('#m_sug_v').previousElementSibling.textContent = esComerciante ? 'Pon tu venta a' : 'Vendes tomando a';
   const r = calcularCiclo({ capital:cap, pb, ps, ...parametrosDesdePerfil() });
   $('m_sug_c').textContent = fmt(pb, pb>=100?2:4); $('m_sug_v').textContent = fmt(ps, ps>=100?2:4); $('m_sug_s').textContent = pct((ps/pb-1)*100); $('m_sug_s').className = (ps>pb)?'pos':'neg';
   const s = semaforoPara(r.margen);
@@ -867,7 +898,7 @@ function renderMercado(){
   $('m_spread').textContent=pct((mercado.precio_venta/mercado.precio_compra-1)*100); $('m_neto').textContent=pct(r.margen); $('m_neto').className=r.margen>=0?'pos':'neg';
   $('m_be').textContent=fmt(r.be,2)+' %'; $('m_gan').textContent=fmt(r.neta)+' '+(mercado.fiat||'');
   $('m_gan').className=r.neta>=0?'pos':'neg';
-  $('m_hora').textContent = (mercado.manual?'Precios manuales · ':'Binance P2P · ') + new Date(mercado.hora).toLocaleString('es-VE') + ` · ganancia calculada con tus precios sugeridos y capital ${fmt(cap,0)} (cámbialo en Ajustes)`;
+  $('m_hora').textContent = (mercado.manual?'Precios manuales · ':'Binance P2P · ') + new Date(mercado.hora).toLocaleString('es-VE') + (esComerciante ? ` · modo comerciante (tus anuncios, maker 0,25 %)` : ` · modo no comerciante (tomas anuncios, taker 0,05 USDT)`) + ` · capital ${fmt(cap,0)}${+perfil.capital_bs?'':' (referencia: 1.000 USDT; pon el tuyo en Ajustes)'}`;
 }
 function renderLibro(j){
   $('card_libro').style.display='block';
@@ -984,16 +1015,19 @@ function renderPlanSimple(j, cap, vueltas, bancos){
   const tc = tramosC.length ? tramosC.reduce((m,t)=>t.pon_compra<m.pon_compra?t:m) : null;
   const tv = tramosV.length ? tramosV.reduce((m,t)=>t.pon_venta>m.pon_venta?t:m) : null;
   // respaldo: libro profundo
-  const pc = tc ? tc.pon_compra : (d.opciones_compra[0]?.precio||0);
-  const pv = tv ? tv.pon_venta : (d.opciones_venta[0]?.precio||0);
+  let pc = tc ? tc.pon_compra : (d.opciones_compra[0]?.precio||0);
+  let pv = tv ? tv.pon_venta : (d.opciones_venta[0]?.precio||0);
+  if (!esComerciante) { pc = d.opciones_compra[0]?.precio || pc; pv = d.opciones_venta[0]?.precio || pv; }   // tomas los anuncios: precios reales de la contraparte
   if(!pc||!pv){ $('ps_box').dataset.estado='gris'; $('ps_titulo').textContent='No hay suficientes anuncios con esos bancos'; $('ps_txt').textContent='Marca más bancos o cambia los tamaños de orden.'; return; }
-  const maker = +perfil.fee_maker_pct/100 || 0.0025;
-  const pctNeto = ((1-maker)*(1-maker)*pv/pc - 1)*100;          // SOLO Binance
+  const maker = esComerciante ? (+perfil.fee_maker_pct/100 || 0.0025) : 0;
+  const usdtTot = cap/pc; const ordenesC = Math.ceil(usdtTot/Math.max(tc?tc.usdt:cmax,1));
+  const takerPct = esComerciante ? 0 : ((ordenesC + 1) * (+perfil.fee_taker_usdt||0.05) / usdtTot) * 100;   // no comerciante: 0,05 USDT por orden tomada
+  const pctNeto = ((1-maker)*(1-maker)*pv/pc - 1)*100 - takerPct;          // SOLO Binance
   const sem = semaforoPara(pctNeto);
   $('ps_box').dataset.estado=sem.clase; document.body.dataset.luz=sem.clase;
   const usdt = cap/pc; const ganVuelta = cap*pctNeto/100;
   $('ps_titulo').textContent = sem.clase==='verde' ? 'Luz verde: hoy sí conviene' : sem.clase==='amarillo' ? 'Luz ámbar: se gana poco' : 'Luz roja: hoy no conviene';
-  $('ps_txt').textContent = `Compras a ${fmt(pc,2)} y vendes a ${fmt(pv,2)}. Con ${fmt(cap,0)} Bs (${fmt(usdt,0)} USDT) ganas ${fmt(ganVuelta,0)} Bs cada vuelta, ya descontado Binance.`;
+  $('ps_txt').textContent = (esComerciante ? `Publicas compra a ${fmt(pc,2)} y venta a ${fmt(pv,2)}. ` : `Le compras a ${d.opciones_compra[0]?.quien||'el vendedor más barato'} a ${fmt(pc,2)} y le vendes a ${d.opciones_venta[0]?.quien||'el comprador más caro'} a ${fmt(pv,2)}. `) + `Con ${fmt(cap,0)} Bs (${fmt(usdt,0)} USDT) ganas ${fmt(ganVuelta,0)} Bs cada vuelta, ya descontado Binance.`;
   $('ps_pc').textContent = fmt(pc,2)+' Bs'; $('ps_pv').textContent = fmt(pv,2)+' Bs'; $('ps_pct').textContent = pct(pctNeto); $('ps_pct').className = pctNeto>=0?'pos':'neg'; $('k_ps').className='kpi '+sem.clase;
   const filas = [['Por vuelta', ganVuelta],['Por día', ganVuelta*vueltas],['Por semana (6 días)', ganVuelta*vueltas*6],['Por mes (26 días)', ganVuelta*vueltas*26]];
   $('t_ps_g').innerHTML = '<tr><th>Periodo</th><th>Ganancia en Bs</th><th>En dólares</th><th>Sobre tu dinero</th></tr>' + filas.map(([n,g])=>`<tr><td>${n}</td><td class="${g>=0?'pos':'neg'}"><b>${fmt(g,0)}</b></td><td class="${g>=0?'pos':'neg'}">${fmt(g/pv,0)} $</td><td>${pct(g/cap*100)}</td></tr>`).join('');
@@ -1001,15 +1035,21 @@ function renderPlanSimple(j, cap, vueltas, bancos){
   const nivel = n => n<=2?['Baja','verde','pocos compiten contigo']:n<=6?['Media','amarillo','hay varios compitiendo']:['Alta','rojo','muchos compiten, será lento'];
   const ordenes = Math.ceil(usdt/Math.max(tc?tc.usdt:cmax,1));
   const nc=nivel(compC), nv=nivel(compV);
-  $('ps_ind').innerHTML = `<div class="kpi ${nc[1]}"><small>Competencia al comprar</small><b>${nc[0]}</b><span class="peq muted">${nc[2]}</span></div><div class="kpi ${nv[1]}"><small>Competencia al vender</small><b>${nv[0]}</b><span class="peq muted">${nv[2]}</span></div><div class="kpi ${ordenes>15?'amarillo':'verde'}"><small>Compras pequeñas por vuelta</small><b>${ordenes}</b><span class="peq muted">${ordenes>15?'muchas liberaciones: ve con calma':'manejable'}</span></div><div class="kpi"><small>Diferencia bruta</small><b>${pct((pv/pc-1)*100)}</b><span class="peq muted">antes de Binance</span></div><div class="kpi"><small>Binance se lleva</small><b>${fmt(maker*200,2)} %</b><span class="peq muted">0,25 % por cada anuncio tuyo</span></div><div class="kpi verde"><small>Banco se lleva</small><b>0 %</b><span class="peq muted">pagando entre el mismo banco</span></div><div class="kpi"><small>Mínimo para no perder</small><b>${fmt((1/((1-maker)**2)-1)*100,2)} %</b><span class="peq muted">de diferencia entre compra y venta</span></div>`;
+  $('ps_ind').innerHTML = `<div class="kpi ${nc[1]}"><small>Competencia al comprar</small><b>${nc[0]}</b><span class="peq muted">${nc[2]}</span></div><div class="kpi ${nv[1]}"><small>Competencia al vender</small><b>${nv[0]}</b><span class="peq muted">${nv[2]}</span></div><div class="kpi ${ordenes>15?'amarillo':'verde'}"><small>Compras pequeñas por vuelta</small><b>${ordenes}</b><span class="peq muted">${ordenes>15?'muchas liberaciones: ve con calma':'manejable'}</span></div><div class="kpi"><small>Diferencia bruta</small><b>${pct((pv/pc-1)*100)}</b><span class="peq muted">antes de Binance</span></div><div class="kpi"><small>Binance se lleva</small><b>${esComerciante?fmt(maker*200,2)+' %':fmt(takerPct,2)+' %'}</b><span class="peq muted">${esComerciante?'0,25 % por cada anuncio tuyo':'0,05 USDT por cada orden que tomas'}</span></div><div class="kpi verde"><small>Banco se lleva</small><b>0 %</b><span class="peq muted">pagando entre el mismo banco</span></div><div class="kpi"><small>Mínimo para no perder</small><b>${esComerciante?fmt((1/((1-maker)**2)-1)*100,2):fmt(takerPct,2)} %</b><span class="peq muted">de diferencia entre compra y venta</span></div>`;
   const nombresBancos = bancos.map(b=>({BancoDeVenezuela:'Banco de Venezuela',Banesco:'Banesco',Mercantil:'Mercantil',PagoMovil:'Pago Móvil'}[b]||b)).join(', ');
-  $('ps_pasos').innerHTML = [
+  $('ps_pasos').innerHTML = (!esComerciante ? [
+    `Entra a Binance P2P → Comprar USDT, filtra por ${nombresBancos||'tus bancos'} y toma el anuncio de <b>${d.opciones_compra[0]?.quien||'el vendedor más barato'}</b> a <b>${fmt(pc,2)} Bs</b> (acepta órdenes desde ${fmt(d.opciones_compra[0]?.min_usdt||0,0)} USDT).`,
+    `Paga desde <b>el mismo banco</b> que usa esa persona: sin comisión y llega al instante. Marca "pagado" y espera que libere.`,
+    `Cuando juntes al menos <b>${fmt(vmin,0)} USDT</b>, ve a Vender USDT y toma el anuncio de <b>${d.opciones_venta[0]?.quien||'el comprador más caro'}</b> a <b>${fmt(pv,2)} Bs</b>.`,
+    `Libera los USDT solo cuando veas el dinero en tu cuenta. Nunca por captura.`,
+    `Repite: ${fmt(vueltas,1)} vueltas al día te dan unos <b>${fmt(ganVuelta*vueltas,0)} Bs diarios</b>. Si la luz cambia a rojo, espera.`
+  ] : [
     `Publica un anuncio de <b>COMPRA</b> de USDT a <b>${fmt(pc,2)} Bs</b>, con límite por orden de <b>${tc?fmt(Math.min(tc.usdt,cmax)*pc*0.1,0):fmt(10*pc,0)} a ${fmt((tc?tc.usdt:cmax)*pc,0)} Bs</b> (órdenes pequeñas), aceptando ${nombresBancos||'tus bancos'}.`,
     `Cada vez que alguien te venda, págale desde <b>el mismo banco que usa esa persona</b> (Banco de Venezuela → Banco de Venezuela, Banesco → Banesco, Mercantil → Mercantil): <b>sin comisión</b> y llega al instante. Luego marca "pagado".`,
     `Cuando juntes al menos <b>${fmt(vmin,0)} USDT</b>, publica un anuncio de <b>VENTA</b> a <b>${fmt(pv,2)} Bs</b> con límite mínimo de <b>${fmt(vmin*pv,0)} Bs</b> (órdenes grandes).`,
     `Libera los USDT solo cuando veas el dinero en tu cuenta. Nunca por captura.`,
     `Repite: ${fmt(vueltas,1)} vueltas al día te dan unos <b>${fmt(ganVuelta*vueltas,0)} Bs diarios</b> con este mercado. Si la luz cambia a rojo, apaga los anuncios y espera.`
-  ].map(t=>`<li>${t}</li>`).join('');
+  ]).map(t=>`<li>${t}</li>`).join('');
   $('ps_ref').textContent = `Referencias reales de ahora: el vendedor más barato pide ${fmt(d.piso_vendedores,2)} y el comprador más caro paga ${fmt(d.techo_compradores,2)}. Tus precios salen de los tamaños de orden donde hay menos competencia (${tc?tc.usdt+' USDT':'—'} para comprar, ${tv?tv.usdt+' USDT':'—'} para vender).`;
 }
 
@@ -1322,12 +1362,12 @@ function volcarPerfilEnUI(){
 async function guardarAjustes(){
   perfil = {...perfil, nombre:$('a_nombre').value, capital_bs:+$('a_capital').value||0, ciclos_dia:+$('a_ciclos').value||1, fee_maker_pct:+$('a_maker').value, fee_taker_usdt:+$('a_taker').value, fee_banco_pct:+$('a_banco').value, igtf_pct:+$('a_igtf').value, reserva_islr_pct:+$('a_islr').value, margen_verde_pct:+$('a_verde').value, margen_amarillo_pct:+$('a_amarillo').value, valor_ut_bs:+$('a_ut').value };
   try{ localStorage.setItem('semaforo_perfil', JSON.stringify(perfil)); }catch(e){}
-  if (sb&&usuario){ const {comisiones:_c, ...resto} = perfil; const { error } = await sb.from('perfiles').upsert({ id:usuario.id, ...resto }); if(error) return toast('Error: '+error.message); }
+  if (sb&&usuario){ const {comisiones:_c, es_comerciante:_e, ...resto} = perfil; const { error } = await sb.from('perfiles').upsert({ id:usuario.id, ...resto }); if(error) return toast('Error: '+error.message); }
   volcarPerfilEnUI(); renderMercado(); renderImpuestos(); toast('Ajustes guardados');
 }
 async function cargarPerfil(){
   try{ const l=localStorage.getItem('semaforo_perfil'); if(l) perfil={...perfil,...JSON.parse(l)}; }catch(e){}
-  if (sb&&usuario){ const { data } = await sb.from('perfiles').select('*').eq('id',usuario.id).maybeSingle(); if (data){ perfil={...perfil,...data}; if(Array.isArray(data.comisiones)&&data.comisiones.length) { comisiones=data.comisiones; try{ localStorage.setItem('semaforo_comisiones', JSON.stringify(comisiones)); }catch(e){} } } }
+  if (sb&&usuario){ const { data } = await sb.from('perfiles').select('*').eq('id',usuario.id).maybeSingle(); if (data){ perfil={...perfil,...data}; if (typeof data.es_comerciante==='boolean'){ esComerciante=data.es_comerciante; try{ localStorage.setItem('semaforo_comerciante', esComerciante?'1':'0'); }catch(e){} } if(Array.isArray(data.comisiones)&&data.comisiones.length) { comisiones=data.comisiones; try{ localStorage.setItem('semaforo_comisiones', JSON.stringify(comisiones)); }catch(e){} } } }
   volcarPerfilEnUI(); renderFees(); llenarRutas();
 }
 
@@ -1335,7 +1375,7 @@ async function cargarPerfil(){
 const PADRE={ops:'calc',impuestos:'metricas'};
 function irA(sec){ document.querySelectorAll('main section').forEach(s=>s.classList.toggle('activa',s.id===sec)); const padre=PADRE[sec]||sec; document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('activa',b.dataset.sec===padre)); window.scrollTo(0,0); if(sec==='mercado') cargarSnapshots(); if(sec==='metricas') renderMetricas(); if(sec==='estrategia'){ renderMM(); cargarHeat(); } }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>irA(b.dataset.sec));
-function mostrarApp(){ try{ if(localStorage.getItem('semaforo_guia')) $('card_guia').style.display='none'; }catch(e){} $('nav').style.display='flex'; irA('mercado'); llenarAnios(); renderImpuestos(); renderMetricas(); $('who').textContent = usuario ? (perfil.nombre||usuario.email) : 'modo invitado'; $('a_info').textContent = usuario ? `Sesión: ${usuario.email}` : 'Sin cuenta: los datos no se guardan en la nube.'; }
+function mostrarApp(){ pintarComerciante(); try{ if(localStorage.getItem('semaforo_guia')) $('card_guia').style.display='none'; }catch(e){} $('nav').style.display='flex'; irA('mercado'); llenarAnios(); renderImpuestos(); renderMetricas(); $('who').textContent = usuario ? (perfil.nombre||usuario.email) : 'modo invitado'; $('a_info').textContent = usuario ? `Sesión: ${usuario.email}` : 'Sin cuenta: los datos no se guardan en la nube.'; }
 async function entrar(){ if(!sb) return $('l_msg').textContent='Configura Supabase en CONFIG.'; const { data, error } = await sb.auth.signInWithPassword({ email:$('l_email').value.trim(), password:$('l_pass').value }); if (error) return $('l_msg').textContent=error.message; usuario=data.user; await arrancar(); }
 async function registrar(){ if(!sb) return $('l_msg').textContent='Configura Supabase en CONFIG.'; const { data, error } = await sb.auth.signUp({ email:$('l_email').value.trim(), password:$('l_pass').value }); if (error) return $('l_msg').textContent=error.message; $('l_msg').textContent = data.session ? 'Cuenta creada.' : 'Cuenta creada: revisa tu correo para confirmarla y luego entra.'; if(data.session){ usuario=data.user; await arrancar(); } }
 async function salir(){ if(sb) await sb.auth.signOut(); location.reload(); }
