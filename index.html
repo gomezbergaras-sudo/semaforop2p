@@ -150,11 +150,13 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
       <div class="kpi"><small>Punto de equilibrio</small><b id="m_be">—</b></div>
       <div class="kpi"><small>Ganancia / ciclo</small><b id="m_gan">—</b></div>
     </div>
-    <div class="fila" style="margin-top:12px">
-      <select id="m_fiat" style="flex:1"><option value="VES">USDT / VES (Bs)</option><option value="USD">USDT / USD</option><option value="PAB">USDT / PAB (Panamá)</option></select>
-      <input id="m_pay" placeholder="Método (opcional): PagoMovil, Banesco, Zelle…" style="flex:2">
+    <div class="grid2" style="margin-top:12px">
+      <div><label>Mercado</label><select id="m_fiat" onchange="cargarMetodos()"><option value="VES">USDT / VES (Bs)</option><option value="USD">USDT / USD</option><option value="PAB">USDT / PAB (Panamá)</option></select></div>
+      <div><label>Anunciantes</label><select id="m_tipo"><option value="todos">Todos (comerciantes y usuarios)</option><option value="comerciante">Solo comerciantes verificados</option><option value="usuario">Solo usuarios (no comerciantes)</option></select></div>
+      <div><label>Método de pago</label><select id="m_pay"><option value="">Todos los métodos</option></select></div>
+      <div><label>Monto de la orden (fiat)</label><input id="m_monto" type="number" inputmode="decimal" placeholder="Ej. 5000 · vacío = cualquiera"></div>
     </div>
-    <div class="fila" style="margin-top:8px">
+    <div class="fila" style="margin-top:10px">
       <button onclick="actualizarMercado()" style="flex:1">Actualizar desde Binance</button>
       <button class="sec" onclick="usarManual()" style="flex:1">Usar precios de la calculadora</button>
     </div>
@@ -162,11 +164,11 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
   </div>
 
   <div class="card" id="card_libro" style="display:none">
-    <h2>Libro de anuncios</h2>
-    <div class="grid2">
-      <div><p class="peq muted" style="margin:0 0 4px">Comerciantes que <b>compran</b> USDT (tu competencia al comprar)</p><table id="t_compradores"></table></div>
-      <div><p class="peq muted" style="margin:0 0 4px">Comerciantes que <b>venden</b> USDT (tu competencia al vender)</p><table id="t_vendedores"></table></div>
-    </div>
+    <h2>Libro de anuncios <span class="muted" id="libro_n" style="text-transform:none;letter-spacing:0"></span></h2>
+    <div class="segment" style="margin-bottom:10px"><button class="activa" onclick="verLado('compradores',this)">Quienes compran USDT</button><button onclick="verLado('vendedores',this)">Quienes venden USDT</button></div>
+    <p class="peq muted" id="libro_txt" style="margin:0 0 6px"></p>
+    <div style="overflow-x:auto"><table id="t_libro"></table></div>
+    <p class="muted peq" style="margin:8px 0 0"><span class="tag c" style="font-size:10px">✓</span> comerciante verificado · <span class="tag v" style="font-size:10px">U</span> usuario normal. Límites = monto mínimo y máximo que acepta cada anuncio.</p>
   </div>
 
   <div class="card">
@@ -460,17 +462,37 @@ function calcAlMercado(){ if(!ultimoCalc) return; mercado = {precio_compra:ultim
 function usarManual(){ $('c_pb').value && $('c_ps').value ? calcAlMercado() : (irA('calc'), toast('Ingresa los precios y calcula')); }
 
 /* ===================== MERCADO ===================== */
+// Métodos de pago de Binance P2P por mercado (identificador que entiende la API → nombre).
+// La lista se completa sola con los métodos que aparezcan en el libro real.
+const METODOS_BASE = {
+  VES: [['PagoMovil','Pago Móvil'],['Banesco','Banesco'],['Mercantil','Mercantil'],['BancoDeVenezuela','Banco de Venezuela'],['Provincial','BBVA Provincial'],['Bancamiga','Bancamiga'],['BNC','BNC'],['Banplus','Banplus'],['BancoDelTesoro','Banco del Tesoro'],['Bancaribe','Bancaribe'],['BancoExterior','Banco Exterior'],['Bicentenario','Banco Bicentenario'],['BFC','BFC Banco Fondo Común'],['BancoPlaza','Banco Plaza'],['BancoActivo','Banco Activo'],['Bancrecer','Bancrecer'],['MiBanco','Mi Banco'],['Banfanb','Banfanb'],['Sofitasa','Banco Sofitasa'],['BOD','BOD'],['Mony','Mony'],['SpecificBank','Transferencia bancaria']],
+  USD: [['Zelle','Zelle'],['BANK','Transferencia bancaria'],['Wise','Wise'],['PayPal','PayPal'],['Skrill','Skrill (Moneybookers)'],['Payoneer','Payoneer'],['CashInPerson','Efectivo en persona'],['CashDeposit','Depósito en efectivo'],['Zinli','Zinli'],['Wally','Wally Tech'],['Reserve','Reserve'],['AirTM','AirTM'],['Uphold','Uphold'],['Revolut','Revolut'],['Mony','Mony'],['Bancamiga','Bancamiga (USD)'],['Banesco','Banesco Panamá / USD'],['Mercantil','Mercantil (USD)']],
+  PAB: [['BANK','Transferencia bancaria'],['Yappy','Yappy'],['Nequi','Nequi'],['BancoGeneral','Banco General'],['Banistmo','Banistmo'],['BAC','BAC Credomatic'],['CashInPerson','Efectivo en persona'],['Zelle','Zelle']],
+};
+let metodosVistos = {};
+try { metodosVistos = JSON.parse(localStorage.getItem('semaforo_metodos')||'{}'); } catch(e){}
+function cargarMetodos(){
+  const fiat = $('m_fiat').value; const sel = $('m_pay'); const prev = sel.value;
+  const mapa = new Map((METODOS_BASE[fiat]||METODOS_BASE.USD).map(([id,n])=>[id,n]));
+  for (const m of (metodosVistos[fiat]||[])) mapa.set(m.id, m.nombre);
+  sel.innerHTML = '<option value="">Todos los métodos</option>' + [...mapa.entries()].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,n])=>`<option value="${id}">${n}</option>`).join('');
+  if ([...mapa.keys()].includes(prev)) sel.value = prev;
+}
+let ladoLibro = 'compradores';
+function verLado(l, btn){ ladoLibro=l; document.querySelectorAll('#card_libro .segment button').forEach(b=>b.classList.toggle('activa',b===btn)); if(mercado&&!mercado.manual) renderLibro(mercado); }
 async function actualizarMercado(){
-  const fiat = $('m_fiat').value, pay = $('m_pay').value.trim();
+  const fiat = $('m_fiat').value, pay = $('m_pay').value, monto = +$('m_monto').value||0, tipo = $('m_tipo').value;
   $('m_hora').textContent = 'Consultando Binance P2P…';
   try{
-    const url = CONFIG.FUNCION_PRECIOS + `?fiat=${fiat}&rows=10` + (pay?`&pay=${encodeURIComponent(pay)}`:'');
-    const r = await fetch(url, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
+    const q = new URLSearchParams({ fiat, rows:'20', tipo }); if (pay) q.set('pay', pay); if (monto) q.set('monto', String(monto));
+    const r = await fetch(CONFIG.FUNCION_PRECIOS + '?' + q.toString(), { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error||'sin datos');
+    if (j.metodos_disponibles?.length){ metodosVistos[fiat] = j.metodos_disponibles; try{ localStorage.setItem('semaforo_metodos', JSON.stringify(metodosVistos)); }catch(e){} cargarMetodos(); if(pay) $('m_pay').value = pay; }
     mercado = j; renderMercado(); renderLibro(j);
-    if (sb && usuario) {
-      await sb.from('snapshots_p2p').insert({ usuario_id: usuario.id, fiat, precio_compra: j.precio_compra, precio_venta: j.precio_venta, detalle: { mediana_compra:j.mediana_compra, mediana_venta:j.mediana_venta, prof_c:j.profundidad_compra_usdt, prof_v:j.profundidad_venta_usdt } });
+    if (!j.precio_compra || !j.precio_venta) { $('m_hora').textContent += ' · Sin anuncios que cumplan los filtros: prueba con otro método o monto.'; }
+    if (sb && usuario && j.precio_compra && j.precio_venta) {
+      await sb.from('snapshots_p2p').insert({ usuario_id: usuario.id, fiat, precio_compra: j.precio_compra, precio_venta: j.precio_venta, detalle: { mediana_compra:j.mediana_compra, mediana_venta:j.mediana_venta, prof_c:j.profundidad_compra_usdt, prof_v:j.profundidad_venta_usdt, filtros:j.filtros } });
       await cargarSnapshots();
     }
   }catch(e){
@@ -479,6 +501,7 @@ async function actualizarMercado(){
 }
 function renderMercado(){
   if(!mercado) return;
+  if(!mercado.precio_compra || !mercado.precio_venta){ $('sem_box').dataset.estado='gris'; document.body.dataset.luz='gris'; $('sem_titulo').textContent='Sin anuncios con esos filtros'; $('sem_texto').textContent='Amplía el método de pago o cambia el monto de la orden.'; $('m_compra').textContent=$('m_venta').textContent=$('m_spread').textContent=$('m_neto').textContent=$('m_be').textContent=$('m_gan').textContent='—'; return; }
   const cap = +perfil.capital_bs || 10000;
   const r = calcularCiclo({ capital:cap, pb:mercado.precio_compra, ps:mercado.precio_venta, ...parametrosDesdePerfil() });
   const s = semaforoPara(r.margen);
@@ -491,9 +514,12 @@ function renderMercado(){
 }
 function renderLibro(j){
   $('card_libro').style.display='block';
-  const fila = a => `<tr><td>${a.comerciante||'—'}<br><span class="muted peq">${a.ordenes_mes} órd · ${fmt(a.tasa_finalizacion*100,0)} %</span></td><td><b>${fmt(a.precio,2)}</b><br><span class="muted peq">${fmt(a.disponible,0)} USDT</span></td></tr>`;
-  $('t_compradores').innerHTML = '<tr><th>Comerciante</th><th>Precio</th></tr>' + (j.top_compradores||[]).map(fila).join('');
-  $('t_vendedores').innerHTML = '<tr><th>Comerciante</th><th>Precio</th></tr>' + (j.top_vendedores||[]).map(fila).join('');
+  const lista = ladoLibro==='compradores' ? (j.top_compradores||[]) : (j.top_vendedores||[]);
+  const f = j.filtros||{}; const filtros = [f.tipo&&f.tipo!=='todos'?({comerciante:'solo comerciantes',usuario:'solo usuarios'})[f.tipo]:null, f.pay?.length?('método: '+f.pay.join(', ')):null, f.monto?('monto '+fmt(f.monto,0)+' '+j.fiat):null].filter(Boolean).join(' · ');
+  $('libro_n').textContent = `· ${j.n_compradores||0} compran / ${j.n_vendedores||0} venden`;
+  $('libro_txt').textContent = (ladoLibro==='compradores' ? 'Anuncios de quienes COMPRAN USDT (tu competencia cuando tú compras; el precio más alto manda).' : 'Anuncios de quienes VENDEN USDT (tu competencia cuando tú vendes; el precio más bajo manda).') + (filtros?' Filtros: '+filtros+'.':'');
+  const fila = a => `<tr><td><span class="tag ${a.tipo==='comerciante'?'c':'v'}" style="font-size:10px">${a.tipo==='comerciante'?'✓':'U'}</span> ${a.comerciante||'—'}<br><span class="muted peq">${a.ordenes_mes} órd · ${fmt(a.tasa_finalizacion*100,0)} % · ${(a.metodos||[]).slice(0,3).join(', ')}${(a.metodos||[]).length>3?' +'+((a.metodos.length)-3):''}</span></td><td><b>${fmt(a.precio,2)}</b><br><span class="muted peq">${fmt(a.disponible,0)} USDT</span></td><td><span class="peq">${fmt(a.minimo,0)}<br>${fmt(a.maximo,0)}</span></td></tr>`;
+  $('t_libro').innerHTML = '<tr><th>Anunciante</th><th>Precio</th><th>Límites</th></tr>' + (lista.length ? lista.map(fila).join('') : '<tr><td colspan="3" class="muted">Ningún anuncio cumple los filtros.</td></tr>');
 }
 async function cargarSnapshots(){
   if(!sb||!usuario) return;
@@ -694,7 +720,9 @@ async function arrancar(){ await cargarPerfil(); mostrarApp(); await cargarOps()
 (async function init(){
   $('o_fecha').value = new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
   ['o_usdt','o_rol'].forEach(i=>$(i).addEventListener('input',autoFee));
+  cargarMetodos();
   if (CONFIG.SUPABASE_URL.includes('TU-PROYECTO')) { $('l_msg').textContent='Supabase sin configurar: usa la calculadora o edita CONFIG.'; }
+  else if (typeof supabase === 'undefined') { $('l_msg').textContent='No cargó la librería de Supabase (revisa tu conexión a internet).'; }
   else {
     sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
     const { data } = await sb.auth.getSession();
