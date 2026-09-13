@@ -256,6 +256,34 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     <p class="muted peq" id="e_hora" style="margin:8px 0 0"></p>
   </div>
 
+
+  <div class="card" id="e_card_dif">
+    <h2>Diferencial cambiario · libro profundo</h2>
+    <p class="peq muted" style="margin:0 0 8px">Lee hasta 100 anuncios por lado, no solo la primera fila. Busca vendedores baratos que acepten órdenes pequeñas (para comprar) y compradores con capacidad grande al precio más alto (para vender).</p>
+    <div class="grid3">
+      <div><label>Compro en órdenes de hasta (USDT)</label><input id="d_cmax" type="number" value="100"></div>
+      <div><label>Vendo en órdenes de al menos (USDT)</label><input id="d_vmin" type="number" value="500"></div>
+      <div><label>Páginas a leer</label><select id="d_pag"><option>3</option><option selected>5</option></select></div>
+    </div>
+    <button style="width:100%;margin-top:10px" onclick="analizarDiferencial()">Buscar opciones de compra y venta</button>
+    <p class="muted peq" id="d_hora" style="margin:8px 0 0"></p>
+    <div id="d_res" style="display:none">
+      <div class="grid3" style="margin-top:10px">
+        <div class="kpi"><small>Vendedor más barato</small><b id="d_piso">—</b></div>
+        <div class="kpi"><small>Comprador más caro</small><b id="d_techo">—</b></div>
+        <div class="kpi" id="k_dif"><small>Diferencial máximo</small><b id="d_max">—</b></div>
+      </div>
+      <h2 style="margin-top:14px">Opciones de COMPRA (les compro USDT)</h2>
+      <div style="overflow-x:auto"><table id="t_dc"></table></div>
+      <h2 style="margin-top:14px">Opciones de VENTA (les vendo USDT)</h2>
+      <div style="overflow-x:auto"><table id="t_dv"></table></div>
+      <h2 style="margin-top:14px">Mejores combinaciones</h2>
+      <p class="peq muted" style="margin:0 0 6px">"Taker" = tomas los dos anuncios ya (0,05 USDT por orden). "Maker" = publicas tus anuncios pegados a esos precios (0,25 % por lado).</p>
+      <div style="overflow-x:auto"><table id="t_dcombo"></table></div>
+      <div class="fila" style="margin-top:8px"><button class="sec" style="flex:1" onclick="difACalc()">Llevar la mejor combinación a la calculadora</button></div>
+    </div>
+  </div>
+
   <div class="card" id="e_card_op" style="display:none">
     <h2>Oportunidades ahora <span class="muted" id="e_op_n" style="text-transform:none;letter-spacing:0"></span></h2>
     <p class="peq muted" style="margin:0 0 6px">Libro cruzado: alguien vende más barato de lo que otro compra. Tomas ambos anuncios como taker (0,05 USDT por orden) y te quedas la diferencia.</p>
@@ -735,6 +763,32 @@ function dibujarHeat(c, g){
   for(let d=0;d<7;d++) for(let hh=0;hh<24;hh++){ const v=g[d+'-'+hh]; ctx.fillStyle = v ? colorSpread(v.reduce((a,b)=>a+b,0)/v.length) : 'rgba(255,255,255,.04)'; ctx.fillRect(left+hh*cw+1, top+d*ch+1, cw-2, ch-2); }
 }
 function colorSpread(s){ if(s<0) return 'rgba(255,77,94,.75)'; if(s<0.5) return 'rgba(255,195,0,.55)'; if(s<1) return 'rgba(34,224,107,.55)'; return 'rgba(34,224,107,.95)'; }
+
+
+/* ===================== DIFERENCIAL CAMBIARIO ===================== */
+let diferencial=null;
+async function analizarDiferencial(){
+  $('d_hora').textContent='Leyendo el libro profundo…';
+  try{
+    const q = new URLSearchParams({ fiat:$('m_fiat').value, rows:'20', tipo:'todos', modo:'diferencial', patrocinados:$('m_patro')?.checked?'1':'0', paso:String(+$('m_paso').value||0.01), paginas:$('d_pag').value, compra_max_usdt:$('d_cmax').value||'100', venta_min_usdt:$('d_vmin').value||'500' });
+    if ($('m_pay').value) q.set('pay', $('m_pay').value);
+    const r = await fetch(CONFIG.FUNCION_PRECIOS+'?'+q.toString(), { headers:{ apikey: CONFIG.SUPABASE_ANON_KEY } });
+    const j = await r.json(); if(!j.ok) throw new Error(j.error||'sin datos');
+    diferencial = j.diferencial; mercado = mercado || j; renderDiferencial(j.fiat);
+    $('d_hora').textContent = `Leídos ${diferencial.anuncios_vendedores} vendedores y ${diferencial.anuncios_compradores} compradores (${diferencial.paginas_leidas} páginas) · ${new Date(j.hora).toLocaleTimeString('es-VE')}`;
+  }catch(e){ $('d_hora').textContent='No se pudo leer: '+e.message; }
+}
+function renderDiferencial(fiat){
+  const d=diferencial; if(!d) return; $('d_res').style.display='block';
+  const dec = d.piso_vendedores>=100?2:4;
+  $('d_piso').textContent=fmt(d.piso_vendedores,dec); $('d_techo').textContent=fmt(d.techo_compradores,dec);
+  const mx = d.piso_vendedores? (d.techo_compradores/d.piso_vendedores-1)*100 : 0; $('d_max').textContent=pct(mx); $('k_dif').className='kpi '+semaforoPara(mx-0.5).clase;
+  const badge = t => `<span class="muted peq">${t==='usuario'?'U':'✓'}</span>`;
+  $('t_dc').innerHTML = d.opciones_compra.length ? '<tr><th>Vendedor</th><th>Precio</th><th>Orden (USDT)</th><th>Disp.</th></tr>' + d.opciones_compra.map(o=>`<tr><td>${o.quien} ${badge(o.tipo)}<br><span class="muted peq">${o.metodos.join(', ')} · ${o.ordenes_mes} órd · ${fmt(o.tasa*100,0)} %</span></td><td><b>${fmt(o.precio,dec)}</b></td><td class="peq">${fmt(o.min_usdt,0)}–${fmt(o.max_usdt,0)}</td><td class="peq">${fmt(o.disponible,0)}</td></tr>`).join('') : '<tr><td class="muted">Ningún vendedor acepta órdenes tan pequeñas; sube el límite.</td></tr>';
+  $('t_dv').innerHTML = d.opciones_venta.length ? '<tr><th>Comprador</th><th>Precio</th><th>Orden (USDT)</th><th>Disp.</th></tr>' + d.opciones_venta.map(o=>`<tr><td>${o.quien} ${badge(o.tipo)}<br><span class="muted peq">${o.metodos.join(', ')} · ${o.ordenes_mes} órd · ${fmt(o.tasa*100,0)} %</span></td><td><b>${fmt(o.precio,dec)}</b></td><td class="peq">${fmt(o.min_usdt,0)}–${fmt(o.max_usdt,0)}</td><td class="peq">${fmt(o.disponible,0)}</td></tr>`).join('') : '<tr><td class="muted">Ningún comprador con esa capacidad; baja el mínimo.</td></tr>';
+  $('t_dcombo').innerHTML = d.combinaciones.length ? '<tr><th>Compro a → vendo a</th><th>Lote</th><th>Neto taker</th><th>Neto maker</th><th>Ganancia</th></tr>' + d.combinaciones.map(c=>`<tr><td>${c.comprar_a} ${badge(c.tipo_c)} <b>${fmt(c.precio_compra,dec)}</b><br>→ ${c.vender_a} ${badge(c.tipo_v)} <b>${fmt(c.precio_venta,dec)}</b></td><td class="peq">${fmt(c.lote_usdt,0)} USDT<br>${c.ordenes_compra} compras</td><td class="${c.neto_taker_pct>=0?'pos':'neg'}"><b>${pct(c.neto_taker_pct)}</b></td><td class="${c.neto_maker_pct>=0?'pos':'neg'}">${pct(c.neto_maker_pct)}</td><td class="${c.ganancia_taker_fiat>=0?'pos':'neg'}">${fmt(c.ganancia_taker_fiat,0)} ${fiat}</td></tr>`).join('') : '<tr><td class="muted">Sin combinaciones.</td></tr>';
+}
+function difACalc(){ const c=diferencial?.combinaciones?.[0]; if(!c) return toast('Primero busca opciones'); $('c_pb').value=c.precio_compra; $('c_ps').value=c.precio_venta; $('c_rol_c').value='TAKER'; $('c_rol_v').value='TAKER'; if(!+$('c_capital').value) $('c_capital').value=Math.round(c.lote_usdt*c.precio_compra); irA('calc'); calcular(); }
 
 /* ===================== PLAN DE ANUNCIOS ===================== */
 function renderPlan(j){
