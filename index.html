@@ -362,57 +362,72 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
 
 <!-- ============ CALCULADORA ============ -->
 <section id="calc">
-  <div class="subnav"><button class="activa" onclick="irA('calc')">Calculadora</button><button onclick="irA('ops')">Registrar operación</button></div>
+  <div class="subnav"><button class="activa" onclick="irA('calc')">Motor de rentabilidad</button><button onclick="irA('ops')">Registrar operación</button></div>
   <div class="card">
-    <h2>Calculadora de ganancia</h2>
-    <p class="ayuda">Escribe tu capital y los dos precios. La app calcula <b>cuánto ganas por ciclo</b> y lo proyecta al día, la semana y el mes.</p>
+    <h2>Motor de rentabilidad P2P</h2>
+    <p class="ayuda">Calcula el <b>margen neto real</b>: comisiones de Binance según maker o taker por orden, más las comisiones bancarias que cargaste por banco, método y ruta. Nunca decide solo por el spread.</p>
     <div class="grid2">
       <div><label>Capital que rotas (fiat)</label><input id="c_capital" type="number" inputmode="decimal" placeholder="Ej. 50000"></div>
       <div><label>Moneda</label><select id="c_fiat"><option>VES</option><option>USD</option><option>PAB</option></select></div>
-      <div><label>Precio de COMPRA (fiat por USDT)</label><input id="c_pb" type="number" inputmode="decimal" step="any" placeholder="Ej. 170.50"></div>
-      <div><label>Precio de VENTA (fiat por USDT)</label><input id="c_ps" type="number" inputmode="decimal" step="any" placeholder="Ej. 172.80"></div>
-      <div><label>Ciclos por día (rotaciones del capital)</label><input id="c_ciclos" type="number" inputmode="decimal" step="0.5" value="2"></div>
-      <div><label>Días operativos por semana</label><input id="c_dias" type="number" inputmode="numeric" value="6" min="1" max="7"></div>
+      <div><label>Precio de COMPRA (fiat/USDT)</label><input id="c_pb" type="number" inputmode="decimal" step="any"></div>
+      <div><label>Precio de VENTA (fiat/USDT)</label><input id="c_ps" type="number" inputmode="decimal" step="any"></div>
+      <div><label>Rol en la compra</label><select id="c_rol_c"><option value="MAKER">Maker (mi anuncio)</option><option value="TAKER">Taker (tomo anuncio ajeno)</option></select></div>
+      <div><label>Rol en la venta</label><select id="c_rol_v"><option value="MAKER">Maker (mi anuncio)</option><option value="TAKER">Taker (tomo anuncio ajeno)</option></select></div>
+      <div><label>Órdenes de compra por ciclo</label><input id="c_n_c" type="number" min="1" value="1"></div>
+      <div><label>Órdenes de venta por ciclo</label><input id="c_n_v" type="number" min="1" value="1"></div>
+      <div><label>Ruta bancaria al PAGAR (compra)</label><select id="c_ruta_c"></select></div>
+      <div><label>Ruta bancaria al COBRAR (venta)</label><select id="c_ruta_v"></select></div>
+      <div><label>Ciclos por día</label><input id="c_ciclos" type="number" inputmode="decimal" step="0.5" value="2"></div>
+      <div><label>Días operativos / semana</label><input id="c_dias" type="number" value="6" min="1" max="7"></div>
+      <div><label>Margen neto objetivo (%)</label><input id="c_obj" type="number" step="0.05" value="0.6"></div>
+      <div><label>Devaluación diaria del fiat (%)</label><input id="c_deval" type="number" step="0.01" value="0.10"></div>
     </div>
-    <details style="margin-top:10px"><summary>Comisiones y costos (se cargan desde Ajustes)</summary>
-      <div class="grid2">
-        <div><label>Comisión maker Binance %</label><input id="c_maker" type="number" step="0.01" value="0.25"></div>
-        <div><label>Comisión taker fija (USDT)</label><input id="c_taker" type="number" step="0.01" value="0.05"></div>
-        <div><label>Rol en la compra</label><select id="c_rol_c"><option value="MAKER">Maker (mi anuncio)</option><option value="TAKER">Taker (tomo anuncio ajeno)</option></select></div>
-        <div><label>Rol en la venta</label><select id="c_rol_v"><option value="MAKER">Maker (mi anuncio)</option><option value="TAKER">Taker (tomo anuncio ajeno)</option></select></div>
-        <div><label>Comisión bancaria % sobre fiat movido</label><input id="c_banco" type="number" step="0.01" value="0"></div>
-        <div><label>IGTF % (solo si aplica a tus pagos)</label><input id="c_igtf" type="number" step="0.1" value="0"></div>
-        <div><label>Reserva para ISLR % de la ganancia</label><input id="c_islr" type="number" step="1" value="15"></div>
-        <div><label>Devaluación diaria del fiat % (riesgo de tener Bs)</label><input id="c_deval" type="number" step="0.01" value="0.10"></div>
+    <details style="margin-top:10px"><summary>Comisiones de Binance y reserva fiscal</summary>
+      <div class="grid3">
+        <div><label>Maker %</label><input id="c_maker" type="number" step="0.01"></div>
+        <div><label>Taker fijo (USDT)</label><input id="c_taker" type="number" step="0.01"></div>
+        <div><label>Reserva ISLR % ganancia</label><input id="c_islr" type="number" step="1"></div>
+        <div><label>IGTF % (si aplica)</label><input id="c_igtf" type="number" step="0.1" value="0"></div>
+        <div><label>Comisión banco % (modo simple, solo si no cargaste rutas)</label><input id="c_banco" type="number" step="0.01" placeholder="vacío = usar rutas"></div>
       </div>
     </details>
-    <button onclick="calcular()" style="width:100%;margin-top:12px">Calcular</button>
+    <button onclick="calcular()" style="width:100%;margin-top:12px">Calcular rentabilidad neta</button>
+    <p class="muted peq" id="c_falta" style="margin:8px 0 0"></p>
   </div>
 
   <div class="card" id="c_res" style="display:none">
-    <h2>Luz de este escenario</h2>
     <div class="semaforo" id="c_box" data-estado="gris" style="margin-bottom:10px"><div class="luces"><i></i><i></i><i></i></div><div><b id="c_veredicto">—</b><p id="c_veredicto_txt"></p></div></div>
+    <h2>Resultado por operación (ciclo)</h2>
     <div class="grid3">
       <div class="kpi"><small>USDT que compras</small><b id="r_usdt">—</b></div>
-      <div class="kpi"><small>Comisiones (fiat)</small><b id="r_fees">—</b></div>
       <div class="kpi"><small>Recibes al vender</small><b id="r_bruto">—</b></div>
-      <div class="kpi" id="k_rneta"><small>Ganancia neta / ciclo</small><b id="r_neta">—</b></div>
-      <div class="kpi"><small>Margen neto</small><b id="r_margen">—</b></div>
-      <div class="kpi"><small>Equilibrio (spread mín.)</small><b id="r_be">—</b></div>
+      <div class="kpi"><small>Costos totales</small><b id="r_fees">—</b></div>
+      <div class="kpi" id="k_rneta"><small>Ganancia neta</small><b id="r_neta">—</b></div>
+      <div class="kpi"><small>ROI neto / operación</small><b id="r_margen">—</b></div>
+      <div class="kpi"><small>Spread bruto (engañoso)</small><b id="r_spread">—</b></div>
     </div>
-    <h2 style="margin-top:14px">Proyección</h2>
+    <h2 style="margin-top:14px">Resumen de costos</h2>
+    <div style="overflow-x:auto"><table id="t_costos"></table></div>
+    <h2 style="margin-top:14px">Rentabilidad con rotación</h2>
     <div class="grid3">
-      <div class="kpi"><small>Diaria</small><b id="r_dia">—</b></div>
-      <div class="kpi"><small>Semanal</small><b id="r_sem">—</b></div>
-      <div class="kpi"><small>Mensual</small><b id="r_mes">—</b></div>
+      <div class="kpi"><small>ROI neto / día</small><b id="r_roi_dia">—</b></div>
+      <div class="kpi"><small>Ganancia / día</small><b id="r_dia">—</b></div>
+      <div class="kpi"><small>Ganancia / semana</small><b id="r_sem">—</b></div>
+      <div class="kpi"><small>Ganancia / mes</small><b id="r_mes">—</b></div>
       <div class="kpi"><small>Reserva ISLR / mes</small><b id="r_islr">—</b></div>
-      <div class="kpi"><small>Neto tras reserva / mes</small><b id="r_mes_neto">—</b></div>
-      <div class="kpi"><small>Rentabilidad mensual s/ capital</small><b id="r_roi">—</b></div>
+      <div class="kpi"><small>ROI neto mensual</small><b id="r_roi">—</b></div>
     </div>
-    <h2 style="margin-top:14px">Modelos de ganancia (mismo capital)</h2>
-    <table id="t_modelos"></table>
-    <p class="muted peq" style="margin:8px 0 0">Costo de tener el capital parado en fiat: <span id="r_deval"></span>. Por eso la velocidad de rotación pesa tanto como el spread.</p>
-    <button class="sec" style="width:100%;margin-top:10px" onclick="calcAlMercado()">Encender el semáforo con estos precios</button>
+    <h2 style="margin-top:14px">Referencias de precio</h2>
+    <div class="grid3">
+      <div class="kpi"><small>Punto de equilibrio (spread)</small><b id="r_be">—</b></div>
+      <div class="kpi verde"><small>Precio máx. de compra para tu objetivo</small><b id="r_pmax">—</b></div>
+      <div class="kpi"><small>Precio de compra de equilibrio</small><b id="r_pbe">—</b></div>
+    </div>
+    <h2 style="margin-top:14px">Comparación de rutas bancarias</h2>
+    <div style="overflow-x:auto"><table id="t_rutas"></table></div>
+    <h2 style="margin-top:14px">Alertas de riesgo</h2>
+    <div id="r_alertas"></div>
+    <p class="muted peq" style="margin:8px 0 0">Costo de tener el capital parado: <span id="r_deval"></span>.</p>
   </div>
 </section>
 
@@ -526,6 +541,21 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     <button onclick="guardarAjustes()" style="width:100%;margin-top:12px">Guardar ajustes</button>
   </div>
   <div class="card">
+    <h2>Comisiones bancarias reales</h2>
+    <p class="ayuda">El motor <b>no asume tarifas</b>: carga aquí lo que te cobra cada banco por método y por ruta. Sin una comisión cargada, la ruta no se puede evaluar.</p>
+    <div class="grid3">
+      <div><label>Banco</label><input id="f_banco" placeholder="Banesco"></div>
+      <div><label>Método</label><input id="f_metodo" placeholder="Pago Móvil"></div>
+      <div><label>Ruta</label><select id="f_ruta"><option value="mismo">Mismo banco</option><option value="interbancario">Interbancario</option></select></div>
+      <div><label>% por transferencia</label><input id="f_pct" type="number" step="0.01" placeholder="0.30"></div>
+      <div><label>Fijo por transferencia (fiat)</label><input id="f_fijo" type="number" step="0.01" placeholder="0"></div>
+      <div><label>Tope por transferencia (fiat, 0 = sin tope)</label><input id="f_tope" type="number" step="0.01" placeholder="0"></div>
+      <div><label>Se cobra al</label><select id="f_aplica"><option value="enviar">Enviar (pagar)</option><option value="recibir">Recibir (cobrar)</option><option value="ambos">Enviar y recibir</option></select></div>
+    </div>
+    <button class="sec" style="width:100%;margin-top:10px" onclick="agregarComision()">Agregar comisión</button>
+    <div style="overflow-x:auto;margin-top:10px"><table id="t_fees"></table></div>
+  </div>
+  <div class="card">
     <h2>Cuenta</h2>
     <p class="peq muted" id="a_info"></p>
     <div class="fila"><button class="sec" onclick="recalcularTodo()" style="flex:1">Recalcular ganancias (FIFO)</button><button class="peligro" onclick="salir()" style="flex:1">Cerrar sesión</button></div>
@@ -602,52 +632,108 @@ function semaforoPara(margen){
   return {clase:'rojo', titulo:'Luz roja: no operes', texto:`Margen neto ${pct(margen)}: las comisiones y el riesgo se comen la ganancia.`};
 }
 
-/* ===================== CALCULADORA ===================== */
+/* ===================== COMISIONES BANCARIAS ===================== */
+let comisiones = [];
+try { comisiones = JSON.parse(localStorage.getItem('semaforo_comisiones')||'[]'); } catch(e){}
+function guardarComisiones(){ try{ localStorage.setItem('semaforo_comisiones', JSON.stringify(comisiones)); }catch(e){} if(sb&&usuario) sb.from('perfiles').update({ comisiones }).eq('id',usuario.id).then(({error})=>{ if(error) console.warn('Ejecuta supabase_migracion_v11.sql:', error.message); }); renderFees(); llenarRutas(); }
+function agregarComision(){
+  const c = { banco:$('f_banco').value.trim(), metodo:$('f_metodo').value.trim(), ruta:$('f_ruta').value, pct:+$('f_pct').value||0, fijo:+$('f_fijo').value||0, tope:+$('f_tope').value||0, aplica:$('f_aplica').value };
+  if(!c.banco||!c.metodo) return toast('Indica banco y método');
+  if($('f_pct').value===''&&$('f_fijo').value==='') return toast('Indica el % o el monto fijo (puede ser 0)');
+  comisiones = comisiones.filter(x=>!(x.banco===c.banco&&x.metodo===c.metodo&&x.ruta===c.ruta)); comisiones.push(c); guardarComisiones(); toast('Comisión guardada');
+}
+function borrarComision(i){ comisiones.splice(i,1); guardarComisiones(); }
+function renderFees(){
+  if(!$('t_fees')) return;
+  $('t_fees').innerHTML = comisiones.length ? '<tr><th>Banco · método</th><th>Ruta</th><th>%</th><th>Fijo</th><th>Tope</th><th>Cobra al</th><th></th></tr>' + comisiones.map((c,i)=>`<tr><td>${c.banco} · ${c.metodo}</td><td>${c.ruta==='mismo'?'mismo banco':'interbancario'}</td><td>${fmt(c.pct,2)} %</td><td>${fmt(c.fijo)}</td><td>${c.tope?fmt(c.tope):'—'}</td><td class="peq">${c.aplica}</td><td><button class="chico peligro" onclick="borrarComision(${i})">✕</button></td></tr>`).join('') : '<tr><td class="muted">Aún no cargaste comisiones. El motor las pedirá antes de calcular.</td></tr>';
+}
+function etiquetaRuta(c){ return `${c.banco} · ${c.metodo} · ${c.ruta==='mismo'?'mismo banco':'interbancario'}`; }
+function llenarRutas(){
+  for (const id of ['c_ruta_c','c_ruta_v']){ const sel=$(id); if(!sel) continue; const prev=sel.value; sel.innerHTML = '<option value="">— elige una ruta cargada —</option>' + comisiones.map((c,i)=>`<option value="${i}">${etiquetaRuta(c)}</option>`).join(''); if(prev!==''&&comisiones[+prev]) sel.value=prev; }
+}
+// costo bancario de mover "monto" en "n" transferencias por la ruta c, en el sentido dado
+function costoRuta(c, monto, n, sentido){
+  if(!c) return 0; if(!(c.aplica==='ambos'||c.aplica===sentido)) return 0;
+  const porTransf = monto/Math.max(n,1); let fee = porTransf*c.pct/100 + c.fijo; if(c.tope>0) fee=Math.min(fee,c.tope); return fee*Math.max(n,1);
+}
+
+/* ===================== MOTOR DE RENTABILIDAD ===================== */
+function motorCiclo(p){
+  // p: capital, pb, ps, maker, taker, rolC, rolV, nC, nV, rutaC, rutaV, igtf, bancoSimple
+  const usdtBruto = p.capital / p.pb;
+  const feeCompraUsdt = p.rolC==='MAKER' ? usdtBruto*p.maker/100 : p.taker*p.nC;
+  const usdtNeto = usdtBruto - feeCompraUsdt;
+  const feeVentaUsdt = p.rolV==='MAKER' ? usdtNeto*p.maker/100 : p.taker*p.nV;
+  const usdtEntregado = usdtNeto - feeVentaUsdt;
+  const fiatBruto = usdtEntregado * p.ps;
+  const bancoC = p.rutaC ? costoRuta(p.rutaC, p.capital, p.nC, 'enviar') : p.capital*(p.bancoSimple||0)/100;
+  const bancoV = p.rutaV ? costoRuta(p.rutaV, fiatBruto, p.nV, 'recibir') : fiatBruto*(p.bancoSimple||0)/100;
+  const igtf = fiatBruto*(p.igtf||0)/100;
+  const neta = fiatBruto - p.capital - bancoC - bancoV - igtf;
+  return { usdtBruto, usdtNeto, feeCompraUsdt, feeVentaUsdt, fiatBruto, bancoC, bancoV, igtf,
+    feeCompraFiat: feeCompraUsdt*p.ps, feeVentaFiat: feeVentaUsdt*p.ps, feesFiat: (feeCompraUsdt+feeVentaUsdt)*p.ps + bancoC + bancoV + igtf,
+    neta, margen: neta/p.capital*100, spread: (p.ps/p.pb-1)*100 };
+}
+function precioCompraPara(p, objetivoPct){ // mayor pb tal que margen ≥ objetivo (bisección)
+  let lo = p.ps*0.5, hi = p.ps*1.2; if (motorCiclo({...p,pb:lo}).margen < objetivoPct) return null;
+  for(let i=0;i<60;i++){ const mid=(lo+hi)/2; (motorCiclo({...p,pb:mid}).margen>=objetivoPct) ? lo=mid : hi=mid; } return lo;
+}
 function leerCalc(){
-  return {
-    capital:+$('c_capital').value, pb:+$('c_pb').value, ps:+$('c_ps').value,
-    maker:+$('c_maker').value, taker:+$('c_taker').value, rolC:$('c_rol_c').value, rolV:$('c_rol_v').value,
-    banco:+$('c_banco').value, igtf:+$('c_igtf').value, islr:+$('c_islr').value,
-    ciclos:+$('c_ciclos').value||1, dias:+$('c_dias').value||6, deval:+$('c_deval').value||0, fiat:$('c_fiat').value
-  };
+  const rc = $('c_ruta_c').value, rv = $('c_ruta_v').value;
+  return { capital:+$('c_capital').value, pb:+$('c_pb').value, ps:+$('c_ps').value, maker:+$('c_maker').value, taker:+$('c_taker').value, rolC:$('c_rol_c').value, rolV:$('c_rol_v').value,
+    nC:Math.max(1,+$('c_n_c').value||1), nV:Math.max(1,+$('c_n_v').value||1), rutaC: rc!==''?comisiones[+rc]:null, rutaV: rv!==''?comisiones[+rv]:null,
+    igtf:+$('c_igtf').value||0, bancoSimple:+$('c_banco').value||0, islr:+$('c_islr').value||0, ciclos:+$('c_ciclos').value||1, dias:+$('c_dias').value||6, deval:+$('c_deval').value||0, objetivo:+$('c_obj').value||0, fiat:$('c_fiat').value };
 }
 function calcular(){
-  const p = leerCalc();
-  if (!(p.capital>0 && p.pb>0 && p.ps>0)) return toast('Ingresa capital, precio de compra y de venta');
-  const r = calcularCiclo(p); ultimoCalc = {p, r};
-  $('c_res').style.display='block';
-  const s = semaforoPara(r.margen); $('c_box').dataset.estado=s.clase; $('c_veredicto').textContent=s.titulo; $('c_veredicto_txt').textContent=s.texto; $('k_rneta').className='kpi '+s.clase;
-  $('r_usdt').textContent = fmt(r.usdtBruto,2)+' USDT';
-  $('r_fees').textContent = fmt(r.feesFiat);
-  $('r_bruto').textContent = fmt(r.fiatBruto);
-  const cls = r.neta>=0?'pos':'neg';
-  $('r_neta').textContent = fmt(r.neta); $('r_neta').className=cls;
-  $('r_margen').textContent = pct(r.margen); $('r_margen').className=cls;
-  $('r_be').textContent = fmt(r.be,2)+' %';
-  const dia = r.neta*p.ciclos, sem = dia*p.dias, mes = dia*p.dias*52/12;
-  $('r_dia').textContent=fmt(dia); $('r_sem').textContent=fmt(sem); $('r_mes').textContent=fmt(mes);
-  $('r_islr').textContent = fmt(Math.max(0,mes)*p.islr/100);
-  $('r_mes_neto').textContent = fmt(mes - Math.max(0,mes)*p.islr/100);
-  $('r_roi').textContent = pct(mes/p.capital*100);
-  $('r_deval').textContent = `${fmt(p.capital*p.deval/100)} ${p.fiat} por día parado (${fmt(p.deval)} % diario)`;
-  // modelos
-  const modelos = [
-    ['Conservador', 1, Math.max(r.spread*0.6, 0)],
-    ['Tu escenario', p.ciclos, r.spread],
-    ['Rotación alta', Math.max(p.ciclos*2,3), r.spread],
-    ['Spread amplio', p.ciclos, r.spread*1.5],
-    ['Mercado apretado', p.ciclos, r.spread*0.5],
-  ];
-  let h = '<tr><th>Modelo</th><th>Ciclos/día</th><th>Spread</th><th>Margen neto</th><th>Ganancia/mes</th></tr>';
-  for (const [nom, cic, sp] of modelos){
-    const rr = calcularCiclo({...p, ps: p.pb*(1+sp/100)});
-    const m = rr.neta*cic*p.dias*52/12;
-    h += `<tr><td>${nom}</td><td>${fmt(cic,1)}</td><td>${fmt(sp,2)} %</td><td class="${rr.margen>=0?'pos':'neg'}">${pct(rr.margen)}</td><td class="${m>=0?'pos':'neg'}">${fmt(m)}</td></tr>`;
-  }
-  $('t_modelos').innerHTML = h;
+  const p = leerCalc(); const falta=[];
+  if(!(p.capital>0)) falta.push('capital'); if(!(p.pb>0)) falta.push('precio de compra'); if(!(p.ps>0)) falta.push('precio de venta');
+  if($('c_maker').value==='') falta.push('comisión maker de Binance'); if($('c_taker').value==='') falta.push('comisión taker de Binance');
+  if(!p.rutaC && !$('c_banco').value) falta.push('ruta bancaria para pagar (o % simple)'); if(!p.rutaV && !$('c_banco').value) falta.push('ruta bancaria para cobrar (o % simple)');
+  if(falta.length){ $('c_falta').innerHTML = '<span class="neg">Faltan datos: '+falta.join(', ')+'.</span> Las comisiones bancarias se cargan en Ajustes; el motor no asume tarifas.'; $('c_res').style.display='none'; return; }
+  $('c_falta').textContent='';
+  const r = motorCiclo(p); ultimoCalc={p,r}; $('c_res').style.display='block';
+  const s = semaforoPara(r.margen); $('c_box').dataset.estado=s.clase; $('c_veredicto').textContent=s.titulo; $('c_veredicto_txt').textContent = (r.spread>0 && r.neta<=0) ? `El spread bruto es ${pct(r.spread)} pero tras costos pierdes: el spread engaña.` : s.texto; $('k_rneta').className='kpi '+s.clase;
+  const F=p.fiat, cls=r.neta>=0?'pos':'neg';
+  $('r_usdt').textContent=fmt(r.usdtBruto,2)+' USDT'; $('r_bruto').textContent=fmt(r.fiatBruto)+' '+F; $('r_fees').textContent=fmt(r.feesFiat)+' '+F;
+  $('r_neta').textContent=fmt(r.neta)+' '+F; $('r_neta').className=cls; $('r_margen').textContent=pct(r.margen); $('r_margen').className=cls; $('r_spread').textContent=pct(r.spread);
+  $('t_costos').innerHTML = '<tr><th>Concepto</th><th>Detalle</th><th>Costo</th><th>% capital</th></tr>' + [
+    ['Binance · compra', p.rolC==='MAKER'?`maker ${fmt(p.maker,2)} %`:`taker ${fmt(p.taker,2)} USDT × ${p.nC} órdenes`, r.feeCompraFiat],
+    ['Binance · venta', p.rolV==='MAKER'?`maker ${fmt(p.maker,2)} %`:`taker ${fmt(p.taker,2)} USDT × ${p.nV} órdenes`, r.feeVentaFiat],
+    ['Banco · pagar la compra', p.rutaC?etiquetaRuta(p.rutaC)+` × ${p.nC}`:`${fmt(p.bancoSimple,2)} % simple`, r.bancoC],
+    ['Banco · cobrar la venta', p.rutaV?etiquetaRuta(p.rutaV)+` × ${p.nV}`:`${fmt(p.bancoSimple,2)} % simple`, r.bancoV],
+    ['IGTF', p.igtf?`${fmt(p.igtf,1)} % sobre lo cobrado`:'no aplica', r.igtf],
+  ].map(([a,b,c])=>`<tr><td>${a}</td><td class="peq muted" style="text-align:left">${b}</td><td>${fmt(c)}</td><td>${fmt(c/p.capital*100,3)} %</td></tr>`).join('') + `<tr><td><b>Total</b></td><td></td><td><b>${fmt(r.feesFiat)}</b></td><td><b>${fmt(r.feesFiat/p.capital*100,3)} %</b></td></tr>`;
+  const dia=r.neta*p.ciclos, sem=dia*p.dias, mes=dia*p.dias*52/12;
+  $('r_roi_dia').textContent=pct(dia/p.capital*100); $('r_dia').textContent=fmt(dia)+' '+F; $('r_sem').textContent=fmt(sem)+' '+F; $('r_mes').textContent=fmt(mes)+' '+F; $('r_islr').textContent=fmt(Math.max(0,mes)*p.islr/100)+' '+F; $('r_roi').textContent=pct(mes/p.capital*100);
+  const pbe = precioCompraPara(p,0), pmax = precioCompraPara(p,p.objetivo); const dec=p.pb>=100?2:4;
+  $('r_be').textContent = pbe? fmt((p.ps/pbe-1)*100,3)+' %' : '—'; $('r_pbe').textContent = pbe? fmt(pbe,dec):'—'; $('r_pmax').textContent = pmax? fmt(pmax,dec)+` (obj. ${fmt(p.objetivo,2)} %)` : 'inalcanzable con este precio de venta';
+  // comparación de rutas: todas las combinaciones cargadas
+  const rutasC = comisiones.filter(c=>c.aplica!=='recibir'), rutasV = comisiones.filter(c=>c.aplica!=='enviar');
+  let h='<tr><th>Pagar por</th><th>Cobrar por</th><th>Costo bancario</th><th>ROI neto / op.</th></tr>'; const filas=[];
+  for(const a of (rutasC.length?rutasC:[null])) for(const b of (rutasV.length?rutasV:[null])){ const rr=motorCiclo({...p,rutaC:a,rutaV:b}); filas.push({a,b,rr}); }
+  filas.sort((x,y)=>y.rr.margen-x.rr.margen);
+  $('t_rutas').innerHTML = h + filas.slice(0,8).map((f,i)=>`<tr ${i===0?'style="color:var(--green);font-weight:700"':''}><td class="peq">${f.a?etiquetaRuta(f.a):'% simple'}</td><td class="peq">${f.b?etiquetaRuta(f.b):'% simple'}</td><td>${fmt(f.rr.bancoC+f.rr.bancoV)}</td><td class="${f.rr.margen>=0?'pos':'neg'}">${pct(f.rr.margen)}</td></tr>`).join('');
+  // alertas
+  const al=[]; const cap = p.capital;
+  if (r.spread>0 && r.neta<=0) al.push(['rojo','El spread bruto es positivo pero el neto es negativo: no operes guiado por el spread.']);
+  if (r.margen>0 && r.margen<p.objetivo) al.push(['amarillo',`Margen neto ${pct(r.margen)} por debajo de tu objetivo ${fmt(p.objetivo,2)} %. Compra a ${pmax?fmt(pmax,dec):'—'} o menos para cumplirlo.`]);
+  if (p.nC>=10) al.push(['amarillo',`${p.nC} órdenes de compra por ciclo: cada liberación es un riesgo operativo y las comisiones fijas pesan más.`]);
+  if (p.ciclos<1) al.push(['amarillo','Menos de un ciclo al día: el capital pasa mucho tiempo parado y la devaluación se come el margen.']);
+  if (p.rolC==='TAKER'&&p.nC>1&&p.taker*p.nC/r.usdtBruto*100>0.2) al.push(['amarillo','La comisión taker fija supera 0,2 % del lote por fraccionar en órdenes pequeñas.']);
+  if (mercado && !mercado.manual){
+    const prof = mercado.profundidad_venta_usdt||0, nv = mercado.n_vendedores||0, nc = mercado.n_compradores||0;
+    if (prof && r.usdtBruto > prof*0.3) al.push(['rojo',`Liquidez: tu lote (${fmt(r.usdtBruto,0)} USDT) supera el 30 % de lo disponible en el libro (${fmt(prof,0)} USDT).`]);
+    if (nv<3||nc<3) al.push(['amarillo',`Poca competencia (${nc} compradores / ${nv} vendedores): riesgo de no ejecutar o de precios inestables.`]);
+    const tops=[...(mercado.top_compradores||[]),...(mercado.top_vendedores||[])].slice(0,6);
+    const flojos = tops.filter(a=>a.tasa_finalizacion<0.95||a.ordenes_mes<50);
+    if (flojos.length) al.push(['amarillo',`Contraparte: ${flojos.length} de los mejores anuncios tienen menos de 95 % de finalización o menos de 50 órdenes/mes. Prefiere comerciantes con historial.`]);
+    const usuarios = tops.filter(a=>a.tipo==='usuario').length; if (usuarios>=3) al.push(['amarillo','Varios de los mejores precios son de usuarios no verificados: mayor riesgo de demora o disputa.']);
+  } else al.push(['gris','Sin datos del libro: actualiza Inicio para evaluar liquidez y contraparte.']);
+  if (!al.length) al.push(['verde','Sin alertas: costos, liquidez y contraparte dentro de lo razonable.']);
+  $('r_alertas').innerHTML = al.map(([c,t])=>`<div class="fila" style="gap:8px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.035);margin-bottom:6px"><i style="width:10px;height:10px;border-radius:50%;flex:none;background:${c==='rojo'?'var(--red)':c==='amarillo'?'var(--yellow)':c==='verde'?'var(--green)':'#555'}"></i><span class="peq">${t}</span></div>`).join('');
+  $('r_deval').textContent = `${fmt(cap*p.deval/100)} ${F} por día (${fmt(p.deval)} % diario)`;
   window.scrollTo({top:$('c_res').offsetTop-70, behavior:'smooth'});
 }
-function sugeridosACalc(){ if(!mercado||!mercado.precio_compra) return toast('Primero actualiza el mercado'); const modo=$('m_modo').value; const pb=(mercado.sugerencia&&modo==='superar')?mercado.sugerencia.compra:mercado.precio_compra; const ps=(mercado.sugerencia&&modo==='superar')?mercado.sugerencia.venta:mercado.precio_venta; $('c_pb').value=pb; $('c_ps').value=ps; $('c_fiat').value=mercado.fiat||'VES'; irA('calc'); if(+$('c_capital').value>0) calcular(); }
 function calcAlMercado(){ if(!ultimoCalc) return; mercado = {precio_compra:ultimoCalc.p.pb, precio_venta:ultimoCalc.p.ps, fiat:ultimoCalc.p.fiat, manual:true, hora:new Date().toISOString()}; renderMercado(); $('card_plan').style.display='none'; irA('mercado'); }
 function usarManual(){ $('c_pb').value && $('c_ps').value ? calcAlMercado() : (irA('calc'), toast('Ingresa los precios y calcula')); }
 
@@ -1074,13 +1160,13 @@ function volcarPerfilEnUI(){
 async function guardarAjustes(){
   perfil = {...perfil, nombre:$('a_nombre').value, capital_bs:+$('a_capital').value||0, ciclos_dia:+$('a_ciclos').value||1, fee_maker_pct:+$('a_maker').value, fee_taker_usdt:+$('a_taker').value, fee_banco_pct:+$('a_banco').value, igtf_pct:+$('a_igtf').value, reserva_islr_pct:+$('a_islr').value, margen_verde_pct:+$('a_verde').value, margen_amarillo_pct:+$('a_amarillo').value, valor_ut_bs:+$('a_ut').value };
   try{ localStorage.setItem('semaforo_perfil', JSON.stringify(perfil)); }catch(e){}
-  if (sb&&usuario){ const { error } = await sb.from('perfiles').upsert({ id:usuario.id, ...perfil }); if(error) return toast('Error: '+error.message); }
+  if (sb&&usuario){ const {comisiones:_c, ...resto} = perfil; const { error } = await sb.from('perfiles').upsert({ id:usuario.id, ...resto }); if(error) return toast('Error: '+error.message); }
   volcarPerfilEnUI(); renderMercado(); renderImpuestos(); toast('Ajustes guardados');
 }
 async function cargarPerfil(){
   try{ const l=localStorage.getItem('semaforo_perfil'); if(l) perfil={...perfil,...JSON.parse(l)}; }catch(e){}
-  if (sb&&usuario){ const { data } = await sb.from('perfiles').select('*').eq('id',usuario.id).maybeSingle(); if (data) perfil={...perfil,...data}; }
-  volcarPerfilEnUI();
+  if (sb&&usuario){ const { data } = await sb.from('perfiles').select('*').eq('id',usuario.id).maybeSingle(); if (data){ perfil={...perfil,...data}; if(Array.isArray(data.comisiones)&&data.comisiones.length) { comisiones=data.comisiones; try{ localStorage.setItem('semaforo_comisiones', JSON.stringify(comisiones)); }catch(e){} } } }
+  volcarPerfilEnUI(); renderFees(); llenarRutas();
 }
 
 /* ===================== AUTH / NAVEGACIÓN ===================== */
@@ -1091,7 +1177,7 @@ function mostrarApp(){ try{ if(localStorage.getItem('semaforo_guia')) $('card_gu
 async function entrar(){ if(!sb) return $('l_msg').textContent='Configura Supabase en CONFIG.'; const { data, error } = await sb.auth.signInWithPassword({ email:$('l_email').value.trim(), password:$('l_pass').value }); if (error) return $('l_msg').textContent=error.message; usuario=data.user; await arrancar(); }
 async function registrar(){ if(!sb) return $('l_msg').textContent='Configura Supabase en CONFIG.'; const { data, error } = await sb.auth.signUp({ email:$('l_email').value.trim(), password:$('l_pass').value }); if (error) return $('l_msg').textContent=error.message; $('l_msg').textContent = data.session ? 'Cuenta creada.' : 'Cuenta creada: revisa tu correo para confirmarla y luego entra.'; if(data.session){ usuario=data.user; await arrancar(); } }
 async function salir(){ if(sb) await sb.auth.signOut(); location.reload(); }
-function modoInvitado(){ invitado=true; cargarPerfil().then(()=>{ mostrarApp(); irA('calc'); }); }
+function modoInvitado(){ invitado=true; cargarPerfil().then(()=>{ mostrarApp(); renderFees(); llenarRutas(); irA('calc'); }); }
 async function arrancar(){ await cargarPerfil(); mostrarApp(); await cargarOps(); await cargarGanancias(); await cargarSnapshots(); }
 
 (async function init(){
