@@ -63,6 +63,7 @@ button.chico{padding:7px 10px;font-size:13px;border-radius:10px}
 @keyframes pulso{50%{background:#343B4B}}
 .semaforo b{font:800 22px/1.1 var(--f-display);display:block;letter-spacing:-.02em;color:var(--text)} .semaforo p{margin:6px 0 0;color:var(--muted);font-size:13.5px;line-height:1.45}
 .semaforo[data-estado="verde"] b{color:var(--green)} .semaforo[data-estado="amarillo"] b{color:var(--yellow)} .semaforo[data-estado="rojo"] b{color:var(--red)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none} .chip.on{border-color:var(--green);color:var(--green);background:rgba(34,224,107,.12)} .chip.todos.on{border-color:var(--yellow);color:var(--yellow);background:rgba(255,195,0,.12)}
 .leyenda{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)} .leyenda span{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--line);padding:5px 10px;border-radius:999px} .leyenda i{width:8px;height:8px;border-radius:50%;display:inline-block} .leyenda .v i{background:var(--green);box-shadow:0 0 6px var(--green)} .leyenda .a i{background:var(--yellow);box-shadow:0 0 6px var(--yellow)} .leyenda .r i{background:var(--red);box-shadow:0 0 6px var(--red)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* ---- tablas / tags ---- */
@@ -158,7 +159,7 @@ details summary{cursor:pointer;color:var(--yellow);font-weight:700;font-size:14p
     <div class="grid2" style="margin-top:12px">
       <div><label>Mercado</label><select id="m_fiat" onchange="cargarMetodos()"><option value="VES">USDT / VES (Bs)</option><option value="USD">USDT / USD</option><option value="PAB">USDT / PAB (Panamá)</option></select></div>
       <div><label>Anunciantes</label><select id="m_tipo"><option value="todos">Todos (comerciantes y usuarios)</option><option value="comerciante">Solo comerciantes verificados</option><option value="usuario">Solo usuarios (no comerciantes)</option></select></div>
-      <div><label>Método de pago</label><select id="m_pay"><option value="">Todos los métodos</option></select></div>
+      <div style="grid-column:1/-1"><label>Métodos de pago <span class="muted">(toca para marcar varios; ninguno = todos)</span></label><div id="m_pay_chips" class="fila" style="gap:6px"></div></div>
       <div><label>Monto de tu orden</label><div class="fila" style="flex-wrap:nowrap"><input id="m_monto" type="number" inputmode="decimal" placeholder="Ej. 500" style="flex:1"><select id="m_monto_en" style="width:96px;flex:none"><option value="usdt">USDT</option><option value="fiat">fiat</option></select></div></div>
       <div><label>Tu anuncio</label><select id="m_modo" onchange="renderMercado()"><option value="superar">Superar el mejor precio por un paso</option><option value="igualar">Igualar el mejor precio</option></select></div>
       <div><label>Paso de mejora</label><input id="m_paso" type="number" inputmode="decimal" step="0.01" value="0.01"></div>
@@ -630,24 +631,34 @@ const METODOS_BASE = {
 };
 let metodosVistos = {};
 try { metodosVistos = JSON.parse(localStorage.getItem('semaforo_metodos')||'{}'); } catch(e){}
+let paySel = new Set();
+try { paySel = new Set(JSON.parse(localStorage.getItem('semaforo_paysel_'+'VES')||'[]')); } catch(e){}
+function payValor(){ return [...paySel].join(','); }
 function cargarMetodos(){
-  const fiat = $('m_fiat').value; const sel = $('m_pay'); const prev = sel.value;
+  const fiat = $('m_fiat').value;
+  try { paySel = new Set(JSON.parse(localStorage.getItem('semaforo_paysel_'+fiat)||'[]')); } catch(e){ paySel = new Set(); }
   const mapa = new Map((METODOS_BASE[fiat]||METODOS_BASE.USD).map(([id,n])=>[id,n]));
   for (const m of (metodosVistos[fiat]||[])) mapa.set(m.id, m.nombre);
-  sel.innerHTML = '<option value="">Todos los métodos</option>' + [...mapa.entries()].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,n])=>`<option value="${id}">${n}</option>`).join('');
-  if ([...mapa.keys()].includes(prev)) sel.value = prev;
+  for (const id of [...paySel]) if(!mapa.has(id)) paySel.delete(id);
+  const lista = [...mapa.entries()].sort((a,b)=>a[1].localeCompare(b[1]));
+  $('m_pay_chips').innerHTML = `<span class="chip todos ${paySel.size?'':'on'}" onclick="togglePay('')">Todos</span>` + lista.map(([id,n])=>`<span class="chip ${paySel.has(id)?'on':''}" onclick="togglePay('${id}')">${n}</span>`).join('');
+}
+function togglePay(id){
+  if (!id) paySel.clear(); else if (paySel.has(id)) paySel.delete(id); else paySel.add(id);
+  try{ localStorage.setItem('semaforo_paysel_'+$('m_fiat').value, JSON.stringify([...paySel])); }catch(e){}
+  cargarMetodos();
 }
 let ladoLibro = 'compradores';
 function verLado(l, btn){ ladoLibro=l; document.querySelectorAll('#card_libro .segment button').forEach(b=>b.classList.toggle('activa',b===btn)); if(mercado&&!mercado.manual) renderLibro(mercado); }
 async function actualizarMercado(){
-  const fiat = $('m_fiat').value, pay = $('m_pay').value, monto = +$('m_monto').value||0, tipo = $('m_tipo').value, montoEn = $('m_monto_en').value, paso = +$('m_paso').value||0.01;
+  const fiat = $('m_fiat').value, pay = payValor(), monto = +$('m_monto').value||0, tipo = $('m_tipo').value, montoEn = $('m_monto_en').value, paso = +$('m_paso').value||0.01;
   $('m_hora').textContent = 'Consultando Binance P2P…';
   try{
     const q = new URLSearchParams({ fiat, rows:'20', tipo, monto_en: montoEn, paso: String(paso), patrocinados: $('m_patro').checked?'1':'0' }); if (pay) q.set('pay', pay); if (monto) q.set('monto', String(monto));
     const r = await fetch(CONFIG.FUNCION_PRECIOS + '?' + q.toString(), { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error||'sin datos');
-    if (j.metodos_disponibles?.length){ metodosVistos[fiat] = j.metodos_disponibles; try{ localStorage.setItem('semaforo_metodos', JSON.stringify(metodosVistos)); }catch(e){} cargarMetodos(); if(pay) $('m_pay').value = pay; }
+    if (j.metodos_disponibles?.length){ metodosVistos[fiat] = j.metodos_disponibles; try{ localStorage.setItem('semaforo_metodos', JSON.stringify(metodosVistos)); }catch(e){} cargarMetodos(); }
     mercado = j; renderMercado(); renderLibro(j); renderPlan(j);
     if (!j.precio_compra || !j.precio_venta) { $('m_hora').textContent += ' · Sin anuncios que cumplan los filtros: prueba con otro método o monto.'; }
     if (sb && usuario && j.precio_compra && j.precio_venta) {
@@ -678,7 +689,7 @@ function renderMercado(){
 function renderLibro(j){
   $('card_libro').style.display='block';
   const lista = ladoLibro==='compradores' ? (j.top_compradores||[]) : (j.top_vendedores||[]);
-  const f = j.filtros||{}; const filtros = [f.tipo&&f.tipo!=='todos'?({comerciante:'solo comerciantes',usuario:'solo usuarios'})[f.tipo]:null, f.pay?.length?('método: '+f.pay.join(', ')):null, f.monto?('monto '+fmt(f.monto,0)+' '+j.fiat):null].filter(Boolean).join(' · ');
+  const f = j.filtros||{}; const filtros = [f.tipo&&f.tipo!=='todos'?({comerciante:'solo comerciantes',usuario:'solo usuarios'})[f.tipo]:null, f.pay?.length?('métodos: '+f.pay.join(', ')):null, f.monto?('monto '+fmt(f.monto,0)+' '+j.fiat):null].filter(Boolean).join(' · ');
   $('libro_n').textContent = `· ${j.n_compradores||0} compran / ${j.n_vendedores||0} venden`;
   $('libro_txt').textContent = (ladoLibro==='compradores' ? 'Anuncios de quienes COMPRAN USDT (tu competencia cuando tú compras; el precio más alto manda).' : 'Anuncios de quienes VENDEN USDT (tu competencia cuando tú vendes; el precio más bajo manda).') + (filtros?' Filtros: '+filtros+'.':'');
   const fila = a => `<tr><td><span class="tag ${a.tipo==='comerciante'?'c':'v'}" style="font-size:10px">${a.tipo==='comerciante'?'✓':'U'}</span>${a.patrocinado?' <span class="tag" style="font-size:10px;background:rgba(255,77,94,.16);color:var(--red)">★ patroc.</span>':''} ${a.comerciante||'—'}<br><span class="muted peq">${a.ordenes_mes} órd · ${fmt(a.tasa_finalizacion*100,0)} % · ${(a.metodos||[]).slice(0,3).join(', ')}${(a.metodos||[]).length>3?' +'+((a.metodos.length)-3):''}</span></td><td><b>${fmt(a.precio,2)}</b><br><span class="muted peq">${fmt(a.disponible,0)} USDT</span></td><td><span class="peq">${fmt(a.minimo,0)}<br>${fmt(a.maximo,0)}</span></td></tr>`;
@@ -698,7 +709,7 @@ async function analizarEstrategia(silencioso=false){
   $('e_hora').textContent = 'Analizando libro, métodos, USD y BCV…';
   try{
     const fiat = $('m_fiat').value;
-    const q = new URLSearchParams({ fiat, rows:'20', tipo:'todos', modo:'estrategia', patrocinados:'0', paso: String(+$('m_paso').value||0.01) });
+    const q = new URLSearchParams({ fiat, rows:'20', tipo:'todos', modo:'estrategia', patrocinados:'0', paso: String(+$('m_paso').value||0.01) }); if (payValor()) q.set('pay', payValor());
     const r = await fetch(CONFIG.FUNCION_PRECIOS + '?' + q.toString(), { headers: { apikey: CONFIG.SUPABASE_ANON_KEY } });
     const j = await r.json(); if(!j.ok) throw new Error(j.error||'sin datos');
     mercado = j; estrategia = j.estrategia; renderMercado(); renderLibro(j); renderPlan(j);
@@ -771,7 +782,7 @@ async function analizarDiferencial(){
   $('d_hora').textContent='Leyendo el libro profundo…';
   try{
     const q = new URLSearchParams({ fiat:$('m_fiat').value, rows:'20', tipo:'todos', modo:'diferencial', patrocinados:$('m_patro')?.checked?'1':'0', paso:String(+$('m_paso').value||0.01), paginas:$('d_pag').value, compra_max_usdt:$('d_cmax').value||'100', venta_min_usdt:$('d_vmin').value||'500' });
-    if ($('m_pay').value) q.set('pay', $('m_pay').value);
+    if (payValor()) q.set('pay', payValor());
     const r = await fetch(CONFIG.FUNCION_PRECIOS+'?'+q.toString(), { headers:{ apikey: CONFIG.SUPABASE_ANON_KEY } });
     const j = await r.json(); if(!j.ok) throw new Error(j.error||'sin datos');
     diferencial = j.diferencial; mercado = mercado || j; renderDiferencial(j.fiat);
